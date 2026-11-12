@@ -58,7 +58,6 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
           <p class="hero-tagline">o computador, <em>por dentro</em>.<br>escreva assembly e veja a CPU executar, passo a passo.</p>
           <div class="hero-cta">
             <os-button variant="p" size="lg" [glow]="true" (click)="go('/simulacoes')">Explorar Simulações</os-button>
-            <os-button variant="s" size="lg" (click)="go('/brandkit')">Design System</os-button>
           </div>
           <div class="hero-term"><span class="p">aluno&#64;arqlive</span><span class="d">:~$</span> executar programa.asm</div>
         </div>
@@ -96,6 +95,12 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
               <os-card title="Simulador de Assembly">
                 <os-card-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg></os-card-icon>
                 Escreva o programa de um lado e veja a execução, passo a passo, do outro.
+              </os-card>
+            </a>
+            <a class="deck-link" href="#/assembly/executor" (click)="go('/assembly/executor'); $event.preventDefault()">
+              <os-card title="Executor de código">
+                <os-card-icon slot="icon" variant="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5l12 7-12 7z"/></svg></os-card-icon>
+                Escreva o código, clique em Executar e veja o resultado e o equivalente em C++.
               </os-card>
             </a>
           </div>

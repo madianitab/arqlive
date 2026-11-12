@@ -30,6 +30,12 @@ describe('Assembly simplificado — montagem', () => {
     expect(p.variaveis.map(v => v.valores)).toEqual([[10], [20], [null], ['X = '], [8, 9, 10]]);
   });
 
+  it('declara com D, D: 0 ou D: vazio', () => {
+    const p = montar('D\nE: 0\nF: vazio\nLOAD R1, 3\nSTORE D, R1\nHALT');
+    expect(p.erros).toEqual([]);
+    expect(p.variaveis.map(v => [v.nome, v.valores])).toEqual([['D', [null]], ['E', [0]], ['F', [null]]]);
+  });
+
   it('distingue rótulo (FIM:) de variável (X: 5)', () => {
     const p = montar('X: 5\nLOOP: LOAD R1, X\nJMP LOOP\nFIM:');
     expect(p.erros).toEqual([]);

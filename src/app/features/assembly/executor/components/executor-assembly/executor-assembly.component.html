@@ -1,0 +1,92 @@
+<div class="exec">
+  <header class="exec-bar">
+    <div class="exec-titulo">
+      <h1>Executor de código</h1>
+      <span>Assembly simplificado · PC e Arduino</span>
+    </div>
+    <div class="exec-acoes">
+      <select class="exec-select" aria-label="Exemplo da aula" [ngModel]="exemplo()" (ngModelChange)="carregarExemplo($event)">
+        <option value="">Exemplos da aula…</option>
+        @for (e of exemplos; track e.id) { <option [value]="e.id">{{ e.nome }}</option> }
+      </select>
+      <button type="button" class="exec-btn" (click)="limpar()" title="Apagar o código"><i class="fa-solid fa-eraser"></i> Limpar</button>
+      <button type="button" class="exec-btn primario" (click)="executar()" title="Executar (Ctrl + Enter)"><i class="fa-solid fa-play"></i> Executar</button>
+    </div>
+  </header>
+
+  <div class="exec-grid">
+    <section class="exec-editor">
+      <app-editor-assembly [alto]="true" [codigo]="codigo()" (codigoChange)="editar($event)" (executar)="executar()"
+                           [linhasErro]="alterado() ? [] : linhasErro()"></app-editor-assembly>
+    </section>
+
+    <aside class="exec-lado">
+      <section class="bloco">
+        <h2>Entrada</h2>
+        @if (entradasUsadas().length) {
+          @for (p of entradasUsadas(); track p) {
+            <div class="porta">
+              <span class="porta-nome">{{ p }}</span>
+              @if (analogica(p)) {
+                <input type="range" min="0" max="1023" [ngModel]="valorEntrada(p)" (ngModelChange)="definirEntrada(p, $event)" [attr.aria-label]="p" />
+                <input type="number" class="num" min="0" max="1023" [ngModel]="valorEntrada(p)" (ngModelChange)="definirEntrada(p, $event)" [attr.aria-label]="p + ' (valor)'" />
+              } @else {
+                <button type="button" class="toggle" [class.on]="valorEntrada(p) === 1" [attr.aria-pressed]="valorEntrada(p) === 1"
+                        (click)="definirEntrada(p, valorEntrada(p) ? 0 : 1)">{{ valorEntrada(p) }} · {{ valorEntrada(p) ? 'HIGH' : 'LOW' }}</button>
+              }
+            </div>
+          }
+        } @else {
+          <p class="vazio">Valores para o IN (BOTAO, A0…). Este programa não lê portas.</p>
+        }
+      </section>
+
+      <section class="bloco">
+        <h2>Saída</h2>
+        @if (resultado(); as r) {
+          @if (erros().length) {
+            @for (e of erros(); track $index) { <p class="erro"><b>Linha {{ e.linha }}:</b> {{ e.msg }}</p> }
+          } @else {
+            <pre class="tela">{{ saida() || '(nada exibido na TELA)' }}</pre>
+            @if (r.erro; as e) { <p class="erro"><b>{{ e.linha ? 'Erro na linha ' + e.linha : 'Erro' }}:</b> {{ e.msg }}</p> }
+            @if (memoria().length) {
+              <div class="final">
+                <span class="final-rot">Memória</span>
+                @for (m of memoria(); track m.nome) { <code [class.nulo]="m.vazio">{{ m.nome }} = {{ m.valor }}</code> }
+              </div>
+            }
+            @if (pinos().length) {
+              <div class="final">
+                <span class="final-rot">Portas</span>
+                @for (p of pinos(); track p.nome) { <code [class.ligado]="p.ligado">{{ p.nome }}: {{ p.ligado ? 'HIGH' : 'LOW' }}</code> }
+              </div>
+            }
+          }
+        } @else {
+          <p class="vazio">Clique em Executar para ver o resultado.</p>
+        }
+      </section>
+
+      <section class="bloco">
+        <div class="bloco-topo">
+          <h2>Código em C++ ({{ resultado() && !erros().length ? (arduino() ? 'Arduino' : 'PC') : 'PC ou Arduino' }})</h2>
+          @if (cpp()) { <button type="button" class="copiar" (click)="copiarCpp()" title="Copiar o código C++"><i class="fa-regular fa-copy"></i></button> }
+        </div>
+        @if (cpp()) {
+          <pre class="cpp">{{ cpp() }}</pre>
+        } @else {
+          <p class="vazio">O equivalente em C++ aparece aqui depois de executar.</p>
+        }
+      </section>
+    </aside>
+  </div>
+
+  <footer class="exec-status">
+    @if (!resultado()) { <span>Pronto</span> }
+    @else if (alterado()) { <span>O código mudou: execute de novo.</span> }
+    @else if (erros().length) { <span class="st-erro">{{ erros().length }} erro(s) no programa</span> }
+    @else if (resultado()!.erro) { <span class="st-erro">Parou com erro após {{ instrucoesExecutadas() }} instruções</span> }
+    @else { <span class="st-ok">Executado: {{ instrucoesExecutadas() }} instruções{{ final()?.tempo ? ' · ' + final()!.tempo + ' ms de DELAY' : '' }}</span> }
+    <a class="st-link" href="#/assembly/simulador">ver passo a passo no simulador →</a>
+  </footer>
+</div>

@@ -6,7 +6,8 @@ Simulador didático de Arquitetura e Organização de Computadores. O aluno escr
 
 | Assunto | Modo | Rota | Pasta |
 |---|---|---|---|
-| Assembly | Simulador de Assembly | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
+| Assembly | Simulador de Assembly (passo a passo) | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
+| Assembly | Executor de código (executa e mostra o resultado e o C++ equivalente) | `#/assembly/executor` | `src/app/features/assembly/executor` |
 
 Em cada assunto, `models/` e `services/` ficam na raiz da pasta e são compartilhados entre os modos.
 
@@ -52,7 +53,7 @@ HALT               ; encerra o programa
 **Acréscimos do simulador** (não estão no slide): `DIV`, `JG`, `JGE`, `JL`, `JLE`, `CALL rótulo` / `RET` com pilha (SP) e `NOP`.
 
 - **Registradores:** `R0` a `R7`; **UC:** PC, IR, MAR, MDR e SP; **flags:** Z (zero), N (negativo) e C (carry, “empresta 1”).
-- **Memória:** `X: 5`, `Y: vazio`, vetor `LED: 8, 9, 10` (acesso `LED[R1]`), texto `TEXTO: "X = "`; também `X: 10 e Y: 20`.
+- **Memória:** `X: 5`, `Y: vazio` (ou só `Y`), vetor `LED: 8, 9, 10` (acesso `LED[R1]`), texto `TEXTO: "X = "`; também `X: 10 e Y: 20`.
 - **Constantes:** decimal, `'0'` (código ASCII), `HIGH` e `LOW`. **Rótulos:** `LOOP:`. **Comentários:** `;`.
 - A lista completa está em `src/app/features/assembly/models/instrucoes.ts`.
 
