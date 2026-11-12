@@ -42,7 +42,7 @@
       <div class="rotulo">{{ g.nome }}</div>
       <ul class="ref">
         @for (d of g.itens; track d.op) {
-          <li><code>{{ d.uso }}</code><span>{{ d.descricao }}@if (d.extra) {&nbsp;<em class="extra">(extra)</em>}</span></li>
+          <li><code>{{ d.uso }}</code><span>{{ d.descricao }}</span></li>
         }
       </ul>
     }
