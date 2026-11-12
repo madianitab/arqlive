@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { OsPanelComponent } from 'src/app/ui/panel/panel.component';
 import { SimuladorAssemblyService } from 'src/app/features/assembly/services/simulador-assembly.service';
-import { DefInstrucao, INSTRUCOES, PORTAS_ENTRADA } from 'src/app/features/assembly/models/instrucoes';
+import { PORTAS_ENTRADA } from 'src/app/features/assembly/models/instrucoes';
 
 @Component({
   selector: 'app-lateral-assembly',
@@ -12,15 +12,7 @@ import { DefInstrucao, INSTRUCOES, PORTAS_ENTRADA } from 'src/app/features/assem
   imports: [FormsModule, OsPanelComponent],
 })
 export class LateralAssemblyComponent {
-  readonly grupos: { nome: string; itens: DefInstrucao[] }[] = [];
-
-  constructor(public sim: SimuladorAssemblyService) {
-    for (const d of INSTRUCOES) {
-      let g = this.grupos.find(x => x.nome === d.grupo);
-      if (!g) this.grupos.push(g = { nome: d.grupo, itens: [] });
-      g.itens.push(d);
-    }
-  }
+  constructor(public sim: SimuladorAssemblyService) {}
 
   /** Porta analógica (0 a 1023) ou digital (0/1). */
   analogica(nome: string): boolean {

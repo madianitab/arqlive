@@ -17,3 +17,9 @@ select.form-control { height: auto; }
   border: 1px solid var(--line); background: var(--surface-2); color: var(--text-2);
 }
 .toggle.on { border-color: var(--ok); background: var(--ok-soft); color: var(--ok-deep); }
+.abrir-tabela {
+  margin-top: 10px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font: inherit; font-size: 13px; font-weight: 600; padding: 7px 10px; cursor: pointer;
+  border: 1px solid var(--a); border-radius: var(--r-sm); background: var(--a-soft); color: var(--a);
+}
+.abrir-tabela:hover { background: var(--a); color: #fff; }

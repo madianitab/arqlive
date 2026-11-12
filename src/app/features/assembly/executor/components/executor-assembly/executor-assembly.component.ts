@@ -4,6 +4,7 @@ import { Execucao, Valor, montar, simular, textoValor } from 'src/app/features/a
 import { traduzirCpp, ehArduino } from 'src/app/features/assembly/models/cpp';
 import { EXEMPLOS_ASSEMBLY } from 'src/app/features/assembly/models/exemplos';
 import { PINO_LED, PORTAS_ENTRADA } from 'src/app/features/assembly/models/instrucoes';
+import { TabelaInstrucoesComponent } from 'src/app/features/assembly/components/tabela-instrucoes/tabela-instrucoes.component';
 import { EditorAssemblyComponent } from 'src/app/features/assembly/simulador/components/editor-assembly/editor-assembly.component';
 
 const INICIAL = `; escreva o programa e clique em Executar (Ctrl + Enter)
@@ -24,7 +25,7 @@ HALT
   templateUrl: './executor-assembly.component.html',
   styleUrls: ['./executor-assembly.component.css'],
   standalone: true,
-  imports: [FormsModule, EditorAssemblyComponent],
+  imports: [FormsModule, EditorAssemblyComponent, TabelaInstrucoesComponent],
 })
 export class ExecutorAssemblyComponent {
   readonly exemplos = EXEMPLOS_ASSEMBLY;

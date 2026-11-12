@@ -37,30 +37,7 @@
   </os-panel>
 
   <os-panel title="Assembly simplificado">
-    <p class="hint">O destino vem sempre primeiro. Registradores: <code>R0</code> a <code>R7</code>.</p>
-    @for (g of grupos; track g.nome) {
-      <div class="rotulo">{{ g.nome }}</div>
-      <ul class="ref">
-        @for (d of g.itens; track d.op) {
-          <li><code>{{ d.uso }}</code><span>{{ d.descricao }}</span></li>
-        }
-      </ul>
-    }
-    <div class="rotulo">Memória e rótulos</div>
-    <ul class="ref">
-      <li><code>X: 5</code><span>variável com valor inicial</span></li>
-      <li><code>Y: vazio</code><span>variável sem valor</span></li>
-      <li><code>LED: 8, 9, 10</code><span>vetor: <code>LED[R1]</code></span></li>
-      <li><code>TEXTO: "X = "</code><span>texto exibido pelo <code>CALL imprime</code></span></li>
-      <li><code>LOOP:</code><span>rótulo para os desvios</span></li>
-      <li><code>; texto</code><span>comentário</span></li>
-    </ul>
-    <div class="rotulo">Portas</div>
-    <ul class="ref">
-      <li><code>LED</code><span>saída no pino 13</span></li>
-      <li><code>TELA</code><span>saída para exibir valores</span></li>
-      <li><code>BOTAO</code>, <code>A0</code>…<code>A5</code><span>entradas (botão 0/1; sensor 0 a 1023)</span></li>
-      <li><code>OUT R2, R3</code><span>pino indicado pelo número em R2</span></li>
-    </ul>
+    <p class="hint">O destino vem sempre primeiro. Registradores <code>R0</code> a <code>R7</code>; só <code>LOAD</code>/<code>STORE</code> acessam a memória.</p>
+    <button type="button" class="abrir-tabela" (click)="sim.abrirTabela()"><i class="fa-solid fa-book-open"></i> Ver todas as instruções</button>
   </os-panel>
 </div>

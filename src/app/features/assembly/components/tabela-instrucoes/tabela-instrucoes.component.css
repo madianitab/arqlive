@@ -1,0 +1,35 @@
+.tab-dlg {
+  margin: auto; inset: 0;
+  width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 48px);
+  padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg, 14px);
+  background: var(--surface); color: var(--text); box-shadow: var(--sh-lg, 0 20px 60px rgba(0,0,0,.25));
+}
+.tab-dlg::backdrop { background: rgba(20, 18, 14, .45); }
+.tab-caixa { display: flex; flex-direction: column; max-height: calc(100vh - 50px); }
+.tab-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 18px 20px 10px; }
+.tab-topo h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.tab-topo p { margin: 4px 0 0; font-size: 13px; color: var(--text-2); }
+.tab-fechar { border: 1px solid var(--line); background: var(--surface); color: var(--text-2); width: 32px; height: 32px; border-radius: var(--r-sm); cursor: pointer; flex: none; }
+.tab-fechar:hover { color: var(--a); border-color: var(--a); }
+.tab-busca {
+  margin: 0 20px 10px; padding: 7px 10px; font: inherit; font-size: 13.5px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-2); color: var(--text);
+}
+.tab-busca:focus { outline: none; border-color: var(--a); box-shadow: var(--ring); }
+.tab-corpo { overflow: auto; padding: 0 20px 18px; }
+
+.tab { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tab th { position: sticky; top: 0; background: var(--surface); text-align: left; font-family: var(--f-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); padding: 8px 8px; border-bottom: 1px solid var(--line); z-index: 1; }
+.tab td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--text-2); line-height: 1.4; }
+.tab tr.grupo td { background: var(--surface-2); color: var(--a); font-family: var(--f-mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 5px 8px; }
+.tab code { font-family: var(--f-mono); font-size: 12.5px; color: var(--text); white-space: nowrap; }
+.t-uso { white-space: nowrap; }
+.t-uso code { display: block; font-weight: 700; }
+.t-uso code.outro { font-weight: 400; color: var(--text-2); }
+.apelido { display: block; font-size: 11px; color: var(--text-3); }
+.t-cpp code { white-space: pre-wrap; color: var(--text-2); }
+.c { text-align: center; width: 48px; color: var(--a); }
+.nada { text-align: center; color: var(--text-3); padding: 16px; }
+.tab-duas { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+@media (max-width: 760px) { .tab-duas { grid-template-columns: 1fr; } .t-cpp { display: none; } }
+.tab-flags { margin: 14px 0 0; font-size: 12.5px; color: var(--text-2); }
