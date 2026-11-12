@@ -1,0 +1,17 @@
+:host { display: block; }
+
+.prog-track {
+  height: 5px;
+  background: var(--line);
+  border-radius: 100px;
+  overflow: hidden;
+}
+.prog-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--a), var(--a-hover));
+  border-radius: 100px;
+  transition: width .6s var(--ease-out);
+}
+.prog-fill.ok   { background: linear-gradient(90deg, var(--ok),   var(--ok-deep));   }
+.prog-fill.warn { background: linear-gradient(90deg, var(--warn),  var(--warn-deep)); }
+.prog-fill.err  { background: linear-gradient(90deg, var(--err),   var(--err-deep));  }

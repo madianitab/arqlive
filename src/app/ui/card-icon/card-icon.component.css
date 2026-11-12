@@ -1,0 +1,19 @@
+:host { display: inline-flex; flex-shrink: 0; }
+
+.card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r);
+  background: var(--a-soft);
+  border: 1px solid var(--a-line);
+  display: grid;
+  place-items: center;
+  color: var(--a);
+  flex-shrink: 0;
+}
+.card-icon svg { width: 19px; height: 19px; }
+
+.card-icon.warn { background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn); }
+.card-icon.ok   { background: var(--ok-soft);   border-color: var(--ok-line);   color: var(--ok);   }
+.card-icon.err  { background: var(--err-soft);  border-color: var(--err-line);  color: var(--err);  }
+.card-icon.info { background: var(--info-soft); border-color: var(--info-line); color: var(--info); }

@@ -1,0 +1,6 @@
+:host { display: block; }
+.os-callout { position: relative; display: inline-flex; align-items: center; gap: 8px;
+  background: var(--a-050, #fff8f2); border: 1px solid var(--a-200, #e9b58f); border-radius: 8px;
+  padding: 8px 11px; font: 400 12px/1.35 var(--f-serif); color: var(--a-700, #8a3d17); max-width: 420px; }
+.os-callout-arrow { position: absolute; top: -7px; left: 22px; width: 12px; height: 12px;
+  background: var(--a-050, #fff8f2); border-left: 1px solid var(--a-200, #e9b58f); border-top: 1px solid var(--a-200, #e9b58f); transform: rotate(45deg); }

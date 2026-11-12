@@ -1,0 +1,42 @@
+:host { display: block; }
+
+.os-stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  box-shadow: var(--sh-xs);
+}
+.os-stat.accent { border-left: 3px solid var(--a); }
+
+.os-stat-label {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.os-stat-value {
+  font-family: var(--f-mono);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -.04em;
+  line-height: 1;
+  color: var(--text);
+}
+.os-stat-value sup {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-3);
+  letter-spacing: 0;
+  margin-left: 1px;
+}
+.os-stat-hint {
+  font-family: var(--f-serif);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--text-3);
+  margin-top: 5px;
+}

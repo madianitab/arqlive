@@ -1,0 +1,44 @@
+<div class="sim-config">
+  <os-panel title="Programa">
+    <label class="rotulo" for="ex">Exemplo</label>
+    <select id="ex" class="form-control" [ngModel]="sim.exemplo()" (ngModelChange)="sim.carregarExemplo($event)">
+      @if (!sim.exemplo()) { <option value="">Código próprio</option> }
+      @for (e of sim.exemplos; track e.id) { <option [value]="e.id">{{ e.nome }}</option> }
+    </select>
+
+    <label class="rotulo" for="entrada">Entrada (valores para o LER)</label>
+    <input id="entrada" class="form-control" type="text" placeholder="ex.: 8 3" [ngModel]="sim.entradaTexto()"
+           (ngModelChange)="sim.editarEntrada($event)" />
+    @if (sim.entrada().invalidos.length) {
+      <p class="hint erro-campo">Valores ignorados: {{ sim.entrada().invalidos.join(', ') }}</p>
+    }
+  </os-panel>
+
+  <os-panel title="Passo a passo">
+    <div class="modo" role="radiogroup" aria-label="Como avançar">
+      <label class="check-row"><input type="radio" name="modo" [checked]="sim.modo() === 'ciclo'" (change)="sim.definirModo('ciclo')" />
+        Busca, decodificação e execução</label>
+      <label class="check-row"><input type="radio" name="modo" [checked]="sim.modo() === 'instrucao'" (change)="sim.definirModo('instrucao')" />
+        Uma instrução por passo</label>
+    </div>
+  </os-panel>
+
+  <os-panel title="Instruções">
+    <p class="hint">Registradores: <code>{{ registradores }}</code>. Operandos: registrador, variável, <code>V[B]</code> ou número.</p>
+    @for (g of grupos; track g.nome) {
+      <div class="rotulo">{{ g.nome }}</div>
+      <ul class="ref">
+        @for (d of g.itens; track d.op) {
+          <li><code>{{ d.uso }}</code><span>{{ d.descricao }}</span></li>
+        }
+      </ul>
+    }
+    <div class="rotulo">Variáveis</div>
+    <ul class="ref">
+      <li><code>X = 5</code><span>variável com valor inicial</span></li>
+      <li><code>V = 3, 8, 1</code><span>vetor (posições 0, 1, 2…)</span></li>
+      <li><code>rotulo:</code><span>marca um ponto para os desvios</span></li>
+      <li><code>; texto</code><span>comentário</span></li>
+    </ul>
+  </os-panel>
+</div>

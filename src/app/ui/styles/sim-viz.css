@@ -1,0 +1,184 @@
+/* Estilos compartilhados da área de visualização dos simuladores (design system). */
+.viz-label {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--a);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.viz-label::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
+
+.viz-scroll { overflow-x: auto; padding-bottom: 4px; }
+
+/* ───────── timeline / gantt ───────── */
+.viz-table {
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-family: var(--f-mono);
+}
+.viz-table td {
+  min-width: 34px;
+  height: 32px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 12px;
+  border-radius: var(--r-xs);
+  padding: 0 6px;
+}
+.t-lbl {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-3);
+  font-size: 10px !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  text-align: right !important;
+  min-width: 70px !important;
+}
+.t-val { background: var(--surface); border: 1px solid var(--line-soft); color: var(--text-2); }
+.t-proc {
+  color: #fff;
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .08);
+}
+/* variante compacta para o diagrama de uso da CPU (uma coluna por unidade de tempo) */
+.viz-table.gantt { border-spacing: 1px; }
+.viz-table.gantt td {
+  min-width: 17px;
+  height: 26px;
+  padding: 0 1px;
+  font-size: 10.5px;
+}
+.viz-table.gantt .t-lbl { min-width: 62px !important; padding: 0 6px; }
+
+.viz {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  font-family: var(--f-sans);
+  color: var(--text);
+  width: 100%;
+}
+.viz-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.res-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  overflow: hidden;
+}
+.res-card-head {
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 11px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+.res-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--f-mono);
+  font-size: 12.5px;
+}
+.res-table th {
+  padding: 9px 12px;
+  background: var(--surface);
+  color: var(--text-3);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-align: center;
+  border-bottom: 1px solid var(--line-soft);
+}
+.res-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-2);
+  text-align: center;
+  vertical-align: middle;
+}
+.res-table tr:last-child td { border-bottom: none; }
+.empty-hint {
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-3);
+  margin: 4px 0;
+}
+.p-dot {
+  display: inline-block;
+  width: 11px; height: 11px;
+  border-radius: 3px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14);
+}
+/* tabelas de memória (paginação) */
+.mem-table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-family: var(--f-mono);
+  font-size: 12px;
+}
+.mem-table caption {
+  caption-side: top;
+  font-family: var(--f-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 0 0 6px;
+  text-align: left;
+}
+.mem-table th {
+  padding: 4px 10px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  text-align: center;
+  white-space: nowrap;
+}
+.mem-table td {
+  height: 28px;
+  min-width: 36px;
+  padding: 0 10px;
+  text-align: center;
+  vertical-align: middle;
+  border-radius: var(--r-xs);
+  color: #fff;
+}
+.mem-livre {
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  color: var(--text-3) !important;
+}
+.mem-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+@container sim-main (max-width: 560px) {
+  .viz-stats { grid-template-columns: 1fr 1fr; }
+}

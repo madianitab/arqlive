@@ -1,0 +1,38 @@
+:host { display: block; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field-lbl {
+  font-size: 12px; font-weight: 500; color: var(--text);
+  letter-spacing: -.005em; display: flex; align-items: center; gap: 6px;
+}
+.field-lbl .req { color: var(--a); font-family: var(--f-mono); }
+
+.input {
+  padding: 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  font-family: var(--f-sans);
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .14s, box-shadow .14s;
+  width: 100%;
+  box-shadow: var(--sh-xs);
+}
+.input:hover  { border-color: var(--text-3); }
+.input:focus  { border-color: var(--a); box-shadow: var(--ring); }
+.input::placeholder { color: var(--text-3); }
+
+.input-err { border-color: var(--err); }
+.input-err:focus { box-shadow: 0 0 0 3px var(--err-soft); }
+.input-ok  { border-color: var(--ok); }
+.input-ok:focus  { box-shadow: 0 0 0 3px var(--ok-soft); }
+
+.field-hint {
+  font-size: 11.5px; color: var(--text-3);
+  font-style: italic; font-family: var(--f-serif);
+}
+.field-hint.err { color: var(--err); font-style: normal; font-family: var(--f-sans); }
+.field-hint.ok  { color: var(--ok-deep); font-style: normal; font-family: var(--f-sans); }

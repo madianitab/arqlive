@@ -1,0 +1,81 @@
+.viz { gap: 18px; }
+.duas { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
+.duas.baixo { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.col .viz-label { margin-bottom: 2px; }
+@container sim-main (max-width: 640px) { .duas, .duas.baixo { grid-template-columns: minmax(0, 1fr); } }
+
+.dica-alterado { margin: 0; font-size: 12.5px; color: var(--warn-deep, var(--text-2)); }
+.obs { margin: 0; font-size: 12px; color: var(--text-3); font-family: var(--f-mono); }
+
+/* narração do passo */
+.narracao {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 10px 12px;
+  background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-md);
+  border-left: 3px solid var(--a);
+  min-height: 118px;
+}
+.narracao[data-fase="erro"] { border-left-color: var(--err); }
+.narracao[data-fase="fim"] { border-left-color: var(--ok); }
+.narr-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.narr-ciclo { font-family: var(--f-mono); font-size: 11.5px; color: var(--text-3); }
+.narr-ir { font-family: var(--f-mono); font-size: 13px; font-weight: 700; color: var(--text); }
+.micro { margin: 0; padding-left: 18px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.6; color: var(--text); }
+
+.chip-fase {
+  font-family: var(--f-mono); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-2); background: var(--surface);
+}
+.chip-fase[data-fase="busca"] { color: var(--info); border-color: var(--info); background: var(--info-soft, var(--surface)); }
+.chip-fase[data-fase="decodificacao"] { color: var(--warn-deep); border-color: var(--warn-line); background: var(--warn-soft); }
+.chip-fase[data-fase="execucao"] { color: var(--a); border-color: var(--a); background: var(--a-soft); }
+.chip-fase[data-fase="fim"] { color: var(--ok-deep); border-color: var(--ok); background: var(--ok-soft); }
+.chip-fase[data-fase="erro"] { color: var(--err-deep); border-color: var(--err); background: var(--err-soft); }
+
+/* CPU */
+.cpu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.cpu-grupo { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 8px 10px 10px; }
+.cpu-titulo { font-family: var(--f-mono); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; }
+.regs { display: flex; flex-wrap: wrap; gap: 8px; }
+.reg {
+  display: flex; flex-direction: column; min-width: 64px; flex: 1 1 64px;
+  border: 1px solid var(--line-soft); border-radius: var(--r-sm); background: var(--surface-2); padding: 4px 8px;
+  transition: background .2s var(--ease), border-color .2s var(--ease);
+}
+.reg.largo { flex: 2 1 150px; }
+.reg.flag { flex: 0 1 52px; min-width: 52px; }
+.r-nome { font-family: var(--f-mono); font-size: 10.5px; font-weight: 700; color: var(--text-3); }
+.r-val { font-family: var(--f-mono); font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reg.mudou { border-color: var(--a); background: var(--a-soft); box-shadow: 0 0 0 2px var(--a-soft); }
+.reg.mudou .r-nome { color: var(--a); }
+
+/* memória */
+.mem-wrap { max-height: 340px; overflow: auto; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); position: relative; }
+.mem { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 12.5px; }
+.mem th { position: sticky; top: 0; z-index: 1; background: var(--surface-2); color: var(--text-3); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+.mem td { padding: 3px 8px; border-bottom: 1px solid var(--line-soft); color: var(--text); white-space: nowrap; }
+.mem tr:last-child td { border-bottom: none; }
+.m-end { color: var(--text-3); width: 44px; text-align: right; }
+.m-nome { color: var(--text-2); }
+.mem tr.dado td { background: var(--surface-2); }
+.mem tr.dado .m-cont { font-weight: 700; }
+.mem tr.atual td { background: var(--a-soft); }
+.mem tr.atual .m-end { box-shadow: inset 3px 0 0 var(--a); }
+.mem tr[data-acesso="leitura"] td { background: var(--info-soft, var(--a-soft)); }
+.mem tr[data-acesso="escrita"] td { background: var(--warn-soft); }
+.mem tr.mudou .m-cont { color: var(--warn-deep); }
+.pc-tag { font-size: 9.5px; font-weight: 700; color: #fff; background: var(--a); border-radius: 3px; padding: 0 5px; margin-right: 4px; }
+
+.legenda { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11.5px; color: var(--text-3); }
+.legenda span { display: inline-flex; align-items: center; gap: 5px; }
+.lg { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); display: inline-block; }
+.lg.atual { background: var(--a-soft); border-color: var(--a); }
+.lg.leitura { background: var(--info-soft, var(--a-soft)); }
+.lg.escrita { background: var(--warn-soft); }
+
+/* saída */
+.saida { max-height: 260px; min-height: 60px; overflow: auto; margin: -8px -12px; padding: 0 4px; }
+.sl { font-size: 13px; line-height: 1.6; white-space: pre; border-radius: 3px; padding: 0 6px; color: #e6e0cf; }
+.sl.nova { background: rgba(255, 255, 255, .12); }
+.vazia { font-style: italic; color: #7d7868; font-size: 13px; }

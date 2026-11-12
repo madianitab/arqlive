@@ -1,0 +1,43 @@
+:host { display: inline-flex; }
+
+.osbg {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--sh-xs);
+}
+
+/* botões internos (projetados) — escopados a este grupo via ::ng-deep */
+:host ::ng-deep .osbg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 40px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--f-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .14s var(--ease), color .14s var(--ease);
+  outline: none;
+}
+:host ::ng-deep .osbg-btn:last-child { border-right: none; }
+:host ::ng-deep .osbg-btn:hover { background: var(--surface-2); color: var(--a); }
+:host ::ng-deep .osbg-btn:focus-visible { box-shadow: inset 0 0 0 2px var(--a); }
+:host ::ng-deep .osbg-btn:disabled { opacity: .45; cursor: not-allowed; }
+:host ::ng-deep .osbg-btn i,
+:host ::ng-deep .osbg-btn svg { font-size: 15px; width: 15px; height: 15px; }
+
+/* variantes */
+:host ::ng-deep .osbg-btn.primary { color: var(--a); }
+:host ::ng-deep .osbg-btn.primary:hover { background: var(--a-soft); }
+:host ::ng-deep .osbg-btn.danger:hover { background: var(--err-soft); color: var(--err); }

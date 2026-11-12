@@ -1,0 +1,54 @@
+@import './app/ui/tokens.css';
+@import '~@fortawesome/fontawesome-free/css/all.min.css';
+
+/* Tailwind — só utilitários (Preflight desligado em tailwind.config.js).
+   @tailwind base não emite reset porque preflight está off; mantido por convenção. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+/* Landing imersiva: esconde a scrollbar e ativa o scroll-snap entre cenas */
+html.os-landing {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: 0;
+}
+html.os-landing::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+.mat-snack-bar-container {
+  position: fixed !important;
+  top: 89% !important;
+  left: 50% !important;
+  border: 1px solid red;
+  color: red !important;
+  background-color: #f2dede;
+}

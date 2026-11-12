@@ -1,0 +1,23 @@
+<os-sim-shell
+  title="Simulador de Assembly"
+  subtitle="Escreva o programa à esquerda e acompanhe a execução, passo a passo, à direita."
+>
+  <ng-container slot="actions">
+    <os-button-group>
+      <button class="osbg-btn primary" type="button" aria-label="Executar o programa desde o início" title="Executar desde o início (Ctrl + Enter)" (click)="sim.executar()">
+        <i class="fa-solid fa-play"></i> Executar
+      </button>
+      <button class="osbg-btn" type="button" aria-label="Voltar ao início" title="Voltar ao início" (click)="sim.reiniciar()">
+        <i class="fa-solid fa-backward-step"></i>
+      </button>
+      <button class="osbg-btn" type="button" aria-label="Ir ao resultado final" title="Ir ao resultado final" (click)="sim.irAoFim()">
+        <i class="fa-solid fa-forward-fast"></i>
+      </button>
+      <button class="osbg-btn danger" type="button" aria-label="Limpar o código" title="Limpar o código" (click)="sim.limpar()">
+        <i class="fa-solid fa-eraser"></i>
+      </button>
+    </os-button-group>
+  </ng-container>
+  <app-lateral-assembly slot="config"></app-lateral-assembly>
+  <app-area-assembly></app-area-assembly>
+</os-sim-shell>

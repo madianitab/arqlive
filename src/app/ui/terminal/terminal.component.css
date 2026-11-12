@@ -1,0 +1,38 @@
+:host { display: block; }
+
+.terminal {
+  background: #0e0d0b;
+  border: 1px solid #2a2720;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  font-family: var(--f-mono);
+  box-shadow: var(--sh-md);
+  position: relative;
+}
+.terminal::after {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.16) 3px, transparent 4px);
+  opacity: .35; mix-blend-mode: overlay;
+}
+
+.term-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 15px;
+  background: #16140f;
+  border-bottom: 1px solid #2a2720;
+  position: relative; z-index: 1;
+}
+.tdot { width: 11px; height: 11px; border-radius: 50%; }
+
+.term-label {
+  font-size: 11px; color: #7d7868; margin-left: 10px;
+  letter-spacing: .04em;
+}
+
+.term-body {
+  padding: 22px 26px;
+  font-size: 14px; line-height: 1.85;
+  color: #c4bda9;
+  position: relative; z-index: 1;
+}
