@@ -9,6 +9,7 @@
         <option value="">Exemplos da aula…</option>
         @for (e of exemplos; track e.id) { <option [value]="e.id">{{ e.nome }}</option> }
       </select>
+      <button type="button" class="exec-btn" (click)="tabela.abrir()" title="Tabela de instruções"><i class="fa-solid fa-book-open"></i> Instruções</button>
       <button type="button" class="exec-btn" (click)="limpar()" title="Apagar o código"><i class="fa-solid fa-eraser"></i> Limpar</button>
       <button type="button" class="exec-btn primario" (click)="executar()" title="Executar (Ctrl + Enter)"><i class="fa-solid fa-play"></i> Executar</button>
     </div>
@@ -93,3 +94,4 @@
     <a class="st-link" href="#/assembly/simulador">ver passo a passo no simulador →</a>
   </footer>
 </div>
+<app-tabela-instrucoes #tabela></app-tabela-instrucoes>

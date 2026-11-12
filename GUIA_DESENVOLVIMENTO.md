@@ -28,7 +28,8 @@ src/app/
         ├── models/       lógica pura (montador, executor, exemplos), sem Angular → fácil de testar
         ├── services/     estado da tela (signals)
         ├── simulador/components/   home-, lateral-, area- e editor-assembly
-        └── executor/components/    executor-assembly (reusa o editor-assembly)
+        ├── executor/components/    executor-assembly (reusa o editor-assembly)
+        └── components/             tabela-instrucoes (janela com todas as instruções, usada nas duas telas)
 ```
 
 **Separação obrigatória:**
@@ -80,6 +81,7 @@ O visual vem do design system do OSLive, copiado em `src/app/ui`. A página **`#
 - **Portas:** entrada `BOTAO` (0/1), `A0`…`A5` (ADC, 0 a 1023) ou número do pino; saída `LED` (pino 13), `TELA` ou número do pino (0 a 13); `OUT R2, R3` usa o pino cujo número está em R2. Os valores de entrada são definidos na lateral.
 - **`CALL imprime`:** rotina do sistema (como o `printf`): exibe na TELA a variável `TEXTO`, sem quebra de linha. `OUT TELA, R1` exibe o valor e quebra a linha.
 - **`vazio`:** variável sem valor (`D: vazio` ou só `D`); ler (`LOAD`) uma variável vazia é erro de execução.
+- **Tabela de instruções:** botão **Instruções** na barra de ações do Simulador e do Executor (e "Ver todas as instruções" na lateral do Simulador) abre a janela `tabela-instrucoes`, gerada a partir de `instrucoes.ts` (uso, outras formas, descrição, C++, ULA), com busca. Instrução nova aparece lá automaticamente.
 - **Executor de código** (`#/assembly/executor`): tela limpa, sem passo a passo — editor à esquerda; entrada (portas), saída (TELA, memória final, portas) e o **código equivalente em C++** à direita. O C++ é gerado por `models/cpp.ts` **no estilo das aulas, sem registradores**: os registradores guardam expressões, o `STORE` vira atribuição (`D = X + 2;`, `Y++;`), IN/OUT/DELAY viram `digitalRead`/`analogRead`/`digitalWrite`/`delay`, e CMP + desvio viram `if`, `if-else`, `for` (contador que começa numa constante e termina com `ADD R, 1`) ou `while`. Formato Arduino (`setup`/`loop`, `led`, `botao`) se o programa usa portas ou DELAY; senão, PC (`main`, `printf`). Se houver desvio fora desses padrões (ou CALL de sub-rotina), usa a tradução direta de `models/cpp-direto.ts` (instrução por instrução, com `goto`) e a tela avisa.
 - **Erros de execução:** memória vazia, divisão por zero, índice fora do vetor, pino inválido, pilha cheia/vazia e mais de 2000 instruções (laço infinito).
 - **Sem HALT:** quando o PC passa da última instrução (ex.: o rótulo `FIM:` no fim), o programa termina sem erro.

@@ -25,6 +25,8 @@ export class SimuladorAssemblyService {
   readonly tocando = signal(false);
   readonly velocidade = signal(1);
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** Incrementado quando alguém pede para abrir a tabela de instruções. */
+  readonly pedidoTabela = signal(0);
 
   readonly programa = computed(() => this.execucao().programa);
   readonly erros = computed(() => this.programa().erros);
@@ -46,6 +48,10 @@ export class SimuladorAssemblyService {
   readonly terminou = computed(() => this.posicao() >= this.total() - 1);
 
   // ─── ações ───
+  abrirTabela(): void {
+    this.pedidoTabela.update(n => n + 1);
+  }
+
   executar(): void {
     this.pausar();
     this.execucao.set(this.rodar());

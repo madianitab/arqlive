@@ -4,6 +4,11 @@
 >
   <ng-container slot="actions">
     <os-button-group>
+      <button class="osbg-btn" type="button" aria-label="Tabela de instruções" title="Tabela de instruções" (click)="tabela?.abrir()">
+        <i class="fa-solid fa-book-open"></i> Instruções
+      </button>
+    </os-button-group>
+    <os-button-group>
       <button class="osbg-btn primary" type="button" aria-label="Executar o programa desde o início" title="Executar desde o início (Ctrl + Enter)" (click)="sim.executar()">
         <i class="fa-solid fa-play"></i> Executar
       </button>
@@ -21,3 +26,4 @@
   <app-lateral-assembly slot="config"></app-lateral-assembly>
   <app-area-assembly></app-area-assembly>
 </os-sim-shell>
+<app-tabela-instrucoes></app-tabela-instrucoes>

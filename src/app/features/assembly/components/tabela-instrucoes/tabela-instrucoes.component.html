@@ -1,0 +1,66 @@
+<dialog #dlg class="tab-dlg" aria-labelledby="tab-titulo" (click)="clicarFundo($event)">
+  <div class="tab-caixa">
+    <header class="tab-topo">
+      <div>
+        <h2 id="tab-titulo">Instruções do Assembly simplificado</h2>
+        <p>O destino vem sempre primeiro. Só LOAD e STORE acessam a memória; a ULA trabalha com registradores e constantes.</p>
+      </div>
+      <button type="button" class="tab-fechar" (click)="fechar()" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button>
+    </header>
+
+    <input class="tab-busca" type="search" placeholder="Buscar (ex.: CMP, vetor, delay)…" aria-label="Buscar instrução"
+           [value]="busca()" (input)="busca.set($any($event.target).value)" />
+
+    <div class="tab-corpo">
+      @if (nadaEncontrado()) { <p class="nada">Nada encontrado.</p> }
+      @if (grupos().length) {
+      <table class="tab">
+        <thead>
+          <tr><th>Instrução</th><th>O que faz</th><th class="t-cpp">Em C++</th><th class="c">ULA</th></tr>
+        </thead>
+        <tbody>
+          @for (g of grupos(); track g.nome) {
+            <tr class="grupo"><td colspan="4">{{ g.nome }}</td></tr>
+            @for (d of g.itens; track d.op) {
+              <tr>
+                <td class="t-uso">
+                  <code>{{ d.uso }}</code>
+                  @for (o of d.outros ?? []; track o) { <code class="outro">{{ o }}</code> }
+                  @if (d.apelidos.length) { <span class="apelido">também: {{ d.apelidos.join(', ') }}</span> }
+                </td>
+                <td>{{ d.descricao }}</td>
+                <td class="t-cpp">@if (d.cpp) { <code>{{ d.cpp }}</code> } @else { — }</td>
+                <td class="c">@if (d.ula) { <i class="fa-solid fa-check" aria-label="sim"></i> }</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+      }
+
+      @if (memoriaFiltrada().length || operandosFiltrados().length) {
+        <div class="tab-duas">
+          @if (memoriaFiltrada().length) {
+          <table class="tab">
+            <thead><tr><th>Memória e rótulos</th><th></th></tr></thead>
+            <tbody>
+              @for (l of memoriaFiltrada(); track l.codigo) { <tr><td class="t-uso"><code>{{ l.codigo }}</code></td><td>{{ l.descricao }}</td></tr> }
+            </tbody>
+          </table>
+          }
+          @if (operandosFiltrados().length) {
+          <table class="tab">
+            <thead><tr><th>Operandos e portas</th><th></th></tr></thead>
+            <tbody>
+              @for (l of operandosFiltrados(); track l.codigo) { <tr><td class="t-uso"><code>{{ l.codigo }}</code></td><td>{{ l.descricao }}</td></tr> }
+            </tbody>
+          </table>
+          }
+        </div>
+      }
+      @if (!busca()) {
+        <p class="tab-flags"><b>Flags</b> (após CMP e operações da ULA): <b>Z</b> = 1 se o resultado é 0 (iguais) · <b>N</b> = 1 se é negativo · <b>C</b> = 1 se R1 &lt; R2, sem considerar sinal.</p>
+      }
+    </div>
+  </div>
+</dialog>
