@@ -27,6 +27,12 @@ import { OsBadgeComponent } from '../../ui/badge/badge.component';
         Assembly simplificado (PC e Arduino), passo a passo: registradores, ULA, flags, memória e portas (LED, botão, sensor).
         <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/simulador')">Abrir →</os-button></div>
       </os-card>
+      <os-card title="Executor de código">
+        <os-card-icon slot="icon" variant="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5l12 7-12 7z"/></svg></os-card-icon>
+        <os-badge slot="badge" variant="s">executor</os-badge>
+        Escreva, execute e veja o resultado direto, com o código equivalente em C++ (PC ou Arduino).
+        <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/executor')">Abrir →</os-button></div>
+      </os-card>
     </div>
   </section>
 

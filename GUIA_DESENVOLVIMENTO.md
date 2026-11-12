@@ -27,7 +27,8 @@ src/app/
     └── assembly/
         ├── models/       lógica pura (montador, executor, exemplos), sem Angular → fácil de testar
         ├── services/     estado da tela (signals)
-        └── simulador/components/   home-, lateral-, area- e editor-assembly
+        ├── simulador/components/   home-, lateral-, area- e editor-assembly
+        └── executor/components/    executor-assembly (reusa o editor-assembly)
 ```
 
 **Separação obrigatória:**
@@ -78,7 +79,8 @@ O visual vem do design system do OSLive, copiado em `src/app/ui`. A página **`#
 - **Flags (tabela do slide 8):** Z = 1 se o resultado é 0; N = 1 se é negativo; C = 1 se R1 < R2 sem considerar sinal (no `SUB`/`CMP`; no `ADD`, vai-um em 16 bits; no `MUL`/`DIV`, 0). `CMP` não guarda o resultado.
 - **Portas:** entrada `BOTAO` (0/1), `A0`…`A5` (ADC, 0 a 1023) ou número do pino; saída `LED` (pino 13), `TELA` ou número do pino (0 a 13); `OUT R2, R3` usa o pino cujo número está em R2. Os valores de entrada são definidos na lateral.
 - **`CALL imprime`:** rotina do sistema (como o `printf`): exibe na TELA a variável `TEXTO`, sem quebra de linha. `OUT TELA, R1` exibe o valor e quebra a linha.
-- **`vazio`:** variável sem valor; ler (`LOAD`) uma variável vazia é erro de execução.
+- **`vazio`:** variável sem valor (`D: vazio` ou só `D`); ler (`LOAD`) uma variável vazia é erro de execução.
+- **Executor de código** (`#/assembly/executor`): tela limpa, sem passo a passo — editor à esquerda; entrada (portas), saída (TELA, memória final, portas) e o **código equivalente em C++** à direita. O C++ é gerado por `models/cpp.ts`, instrução por instrução: formato Arduino (`setup`, `digitalRead`…) se o programa usa portas ou DELAY; senão, formato de PC (`main`, `printf`).
 - **Erros de execução:** memória vazia, divisão por zero, índice fora do vetor, pino inválido, pilha cheia/vazia e mais de 2000 instruções (laço infinito).
 - **Sem HALT:** quando o PC passa da última instrução (ex.: o rótulo `FIM:` no fim), o programa termina sem erro.
 - **Exemplos:** os programas de `models/exemplos.ts` são os do slide; acréscimos (como `TEXTO` e `D: vazio`) ficam comentados no código.

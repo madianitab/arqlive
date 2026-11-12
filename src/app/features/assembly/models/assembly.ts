@@ -181,11 +181,17 @@ export function montar(codigo: string): Programa {
     let s = semComentario(bruta).trim();
     if (!s || SECAO.test(s)) return;
 
-    // declaração de variável: X: 5   X: vazio   TEXTO: "X = "   LED: 8, 9, 10   X: 10 e Y: 20
+    // declaração de variável: X: 5   X: vazio   TEXTO: "X = "   LED: 8, 9, 10   X: 10 e Y: 20   (ou só D)
     const partes = s.split(/\s+e\s+(?=[A-Za-z_]\w*\s*:)/i);
     const decl = partes.map(p => p.match(/^([A-Za-z_]\w*)\s*:\s*(.+)$/));
     if (decl.every(d => d && VALOR_DADO.test(d[2].trim()))) {
       decl.forEach(d => declarar(linha, d![1], d![2]));
+      return;
+    }
+
+    // declaração só com o nome (D): variável vazia
+    if (/^[A-Za-z_]\w*$/.test(s) && !buscarInstrucao(s)) {
+      declarar(linha, s, 'vazio');
       return;
     }
 

@@ -44,7 +44,7 @@ export function destacarAssembly(linha: string): string {
   standalone: true,
   styleUrls: ['./editor-assembly.component.css'],
   template: `
-    <div class="editor" [class.erro]="linhasErro.length > 0">
+    <div class="editor" [class.erro]="linhasErro.length > 0" [class.alto]="alto">
       <div class="area">
         <div class="gutter" aria-hidden="true">
           @for (l of linhas(); track $index) {
@@ -67,6 +67,8 @@ export class EditorAssemblyComponent {
   @Input() set codigo(v: string) { if (v !== this.texto()) this.texto.set(v); }
   @Input() linhaAtual: number | null = null;
   @Input() linhasErro: number[] = [];
+  /** Editor alto, ocupando a altura disponível (tela do executor). */
+  @Input() alto = false;
   @Output() codigoChange = new EventEmitter<string>();
   @Output() executar = new EventEmitter<void>();
 
