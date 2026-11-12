@@ -1,7 +1,7 @@
 import { Component, computed, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Execucao, Valor, montar, simular, textoValor } from 'src/app/features/assembly/models/assembly';
-import { gerarCpp, ehArduino } from 'src/app/features/assembly/models/cpp';
+import { traduzirCpp, ehArduino } from 'src/app/features/assembly/models/cpp';
 import { EXEMPLOS_ASSEMBLY } from 'src/app/features/assembly/models/exemplos';
 import { PINO_LED, PORTAS_ENTRADA } from 'src/app/features/assembly/models/instrucoes';
 import { EditorAssemblyComponent } from 'src/app/features/assembly/simulador/components/editor-assembly/editor-assembly.component';
@@ -68,10 +68,11 @@ export class ExecutorAssemblyComponent {
     if (!f) return [];
     return Object.entries(f.pinos).map(([p, v]) => ({ nome: +p === PINO_LED ? 'LED' : `Pino ${p}`, ligado: v !== 0 }));
   });
-  readonly cpp = computed(() => {
+  readonly traducao = computed(() => {
     const r = this.resultado();
-    return r ? gerarCpp(r.programa) : '';
+    return r ? traduzirCpp(r.programa) : null;
   });
+  readonly cpp = computed(() => this.traducao()?.codigo ?? '');
   readonly arduino = computed(() => {
     const r = this.resultado();
     return r ? ehArduino(r.programa) : false;
