@@ -1,11 +1,12 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { Execucao, Passo, lerEntrada, simular } from '../models/assembly';
+import { Execucao, Passo, simular } from '../models/assembly';
+import { PORTAS_ENTRADA } from '../models/instrucoes';
 import { EXEMPLOS_ASSEMBLY } from '../models/exemplos';
 
 /** Como o botão de passo avança. */
 export type ModoPasso = 'ciclo' | 'instrucao';
 
-const MODELO_VAZIO = '.DADOS\n\n.CODIGO\n    \n    HLT\n';
+const MODELO_VAZIO = '; valores na memória\nX: 5\n\n; código\nLOAD R1, X\n\nHALT\n';
 
 /** Estado da tela do simulador de assembly (uma instância por visita). */
 @Injectable()
@@ -13,7 +14,8 @@ export class SimuladorAssemblyService {
   readonly exemplos = EXEMPLOS_ASSEMBLY;
   readonly exemplo = signal(EXEMPLOS_ASSEMBLY[0].id);
   readonly codigo = signal(EXEMPLOS_ASSEMBLY[0].codigo);
-  readonly entradaTexto = signal(EXEMPLOS_ASSEMBLY[0].entrada ?? '');
+  /** Valores das portas de entrada (BOTAO, A0…, ou o número do pino). */
+  readonly entradas = signal<Record<string, number>>({ ...(EXEMPLOS_ASSEMBLY[0].entradas ?? {}) });
   readonly modo = signal<ModoPasso>('ciclo');
   readonly execucao = signal<Execucao>(this.rodar());
   /** O código ou a entrada mudaram depois da última execução. */
@@ -24,7 +26,6 @@ export class SimuladorAssemblyService {
   readonly velocidade = signal(1);
   private timer: ReturnType<typeof setTimeout> | null = null;
 
-  readonly entrada = computed(() => lerEntrada(this.entradaTexto()));
   readonly programa = computed(() => this.execucao().programa);
   readonly erros = computed(() => this.programa().erros);
 
@@ -72,9 +73,21 @@ export class SimuladorAssemblyService {
     this.alterado.set(true);
   }
 
-  editarEntrada(t: string): void {
-    this.entradaTexto.set(t);
-    this.alterado.set(true);
+  /** Muda o valor de uma porta de entrada e executa de novo, mantendo o ponto da execução. */
+  definirEntrada(nome: string, valor: number): void {
+    const def = PORTAS_ENTRADA.find(p => p.nome === nome);
+    const max = def ? def.max : 1;
+    const v = Math.max(0, Math.min(max, Math.round(Number(valor) || 0)));
+    this.entradas.update(e => ({ ...e, [nome]: v }));
+    if (this.alterado()) return;
+    const pos = this.posicao();
+    this.pausar();
+    this.execucao.set(this.rodar());
+    this.posicao.set(Math.min(pos, this.total() - 1));
+  }
+
+  valorEntrada(nome: string): number {
+    return this.entradas()[nome] ?? 0;
   }
 
   carregarExemplo(id: string): void {
@@ -83,7 +96,7 @@ export class SimuladorAssemblyService {
     this.pausar();
     this.exemplo.set(id);
     this.codigo.set(ex.codigo);
-    this.entradaTexto.set(ex.entrada ?? '');
+    this.entradas.set({ ...(ex.entradas ?? {}) });
     this.execucao.set(this.rodar());
     this.alterado.set(false);
     this.posicao.set(0);
@@ -93,7 +106,7 @@ export class SimuladorAssemblyService {
     this.pausar();
     this.exemplo.set('');
     this.codigo.set(MODELO_VAZIO);
-    this.entradaTexto.set('');
+    this.entradas.set({});
     this.execucao.set(this.rodar());
     this.alterado.set(true);
     this.posicao.set(0);
@@ -142,6 +155,6 @@ export class SimuladorAssemblyService {
   }
 
   private rodar(): Execucao {
-    return simular(this.codigo(), lerEntrada(this.entradaTexto()).valores);
+    return simular(this.codigo(), this.entradas());
   }
 }
