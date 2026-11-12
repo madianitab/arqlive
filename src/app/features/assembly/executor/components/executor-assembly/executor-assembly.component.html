@@ -73,6 +73,9 @@
           @if (cpp()) { <button type="button" class="copiar" (click)="copiarCpp()" title="Copiar o código C++"><i class="fa-regular fa-copy"></i></button> }
         </div>
         @if (cpp()) {
+          @if (traducao()?.nivel === 'direto') {
+            <p class="nota">Este programa tem desvios fora dos padrões de if/for: o C++ foi traduzido instrução por instrução.</p>
+          }
           <pre class="cpp">{{ cpp() }}</pre>
         } @else {
           <p class="vazio">O equivalente em C++ aparece aqui depois de executar.</p>

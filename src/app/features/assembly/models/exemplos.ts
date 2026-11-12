@@ -53,7 +53,8 @@ STORE Y, R2
     codigo: `; main(){ int X = 10, Y = 20; X = X + Y; Y++; }
 
 ; valores na memória
-X: 10 e Y: 20
+X: 10
+Y: 20
 
 ; x = x + y
 LOAD R1, X
@@ -106,7 +107,7 @@ STORE A, R1
 ; valores na memória
 T: 30
 L: 25
-D: vazio      ; D também precisa existir na memória
+D: 0
 
 ; D = (T - L) * 2
 LOAD R1, T
@@ -179,13 +180,13 @@ FIM:          ; segue o programa
 ;   digitalWrite(leds[i], LOW);
 ; }
 
-LED: 8, 9, 10      ; leds[] = {8, 9, 10} na memória
+LEDS: 8, 9, 10     ; pinos dos LEDs
 
 LOAD R1, 0         ; i = 0
 LOOP:
  CMP R1, 3         ; i chegou ao final?
  JE FIM            ; se sim, sai do loop
- LOAD R2, LED[R1]  ; R2 = nº do pino
+ LOAD R2, LEDS[R1] ; R2 = nº do pino
  LOAD R3, 1        ; HIGH
  OUT R2, R3        ; acende o LED indicado por R2
  DELAY 200
