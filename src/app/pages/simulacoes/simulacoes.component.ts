@@ -24,7 +24,7 @@ import { OsBadgeComponent } from '../../ui/badge/badge.component';
       <os-card title="Simulador de Assembly">
         <os-card-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg></os-card-icon>
         <os-badge slot="badge" variant="a">simulador</os-badge>
-        Escreva o programa e execute passo a passo: registradores (PC, IR, MAR, MDR), memória e saída.
+        Assembly simplificado (PC e Arduino), passo a passo: registradores, ULA, flags, memória e portas (LED, botão, sensor).
         <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/simulador')">Abrir →</os-button></div>
       </os-card>
     </div>

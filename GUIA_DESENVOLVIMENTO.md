@@ -67,16 +67,21 @@ O visual vem do design system do OSLive, copiado em `src/app/ui`. A página **`#
 - Ciclo de instrução: **busca → decodificação → execução**.
 - Numeração a partir de 0 (endereços de memória e posições de vetor).
 
-### Assembly
-- **Conjunto de instruções em um arquivo só:** `features/assembly/models/instrucoes.ts` (nome, apelidos, operandos, uso e descrição). O montador, o executor e a referência da lateral leem dali. Para mudar o padrão de assembly, comece por esse arquivo.
-- **Memória:** cada instrução ocupa uma palavra, a partir do endereço 0; as variáveis vêm logo depois do código, na ordem da declaração (vetor = palavras seguidas).
-- **Busca:** `MAR ← PC`, `MDR ← M[MAR]`, `IR ← MDR`, `PC ← PC + 1`.
-- **Acesso a variável na execução:** leitura `MAR ← end`, `MDR ← M[end]`; escrita `MAR ← end`, `MDR ← valor`, `M[end] ← MDR`.
-- **Flags:** `CMP a, b` calcula a − b e atualiza **Z** (resultado 0) e **N** (resultado negativo), sem guardar o resultado. As operações aritméticas também atualizam Z e N. Desvios: `JE` (Z = 1), `JNE` (Z = 0), `JG` (Z = 0 e N = 0), `JGE` (N = 0), `JL` (N = 1), `JLE` (N = 1 ou Z = 1).
-- **Alto nível de propósito:** operandos podem ser memória nos dois lados (`ADD X, Y`), e há `ESCREVER "texto"`, para os programas ficarem curtos e legíveis.
-- **Entrada:** os valores do `LER` vêm do campo "Entrada" da lateral, em ordem. Faltou valor = erro de execução.
-- **Erros de execução:** divisão por zero, índice fora do vetor, falta de entrada e mais de 2000 instruções (laço infinito).
-- **Sem HLT:** quando o PC passa da última instrução, o programa termina (sem erro).
+### Assembly (padrão da Aula 14 de ArqII — "Do C++ ao Assembly")
+- **O padrão é o dos slides da professora.** Pode-se acrescentar coisas, mas não mudar o que está no slide. Se algo no slide estiver errado, use o correto e avise a professora.
+- **Conjunto de instruções em um arquivo só:** `features/assembly/models/instrucoes.ts` (nome, apelidos, operandos, uso, descrição, equivalente em C++, se usa a ULA e se é acréscimo — `extra: true`). O montador, o executor e a referência da lateral leem dali.
+- **Modelo RISC (AVR do Arduino):** só `LOAD`/`STORE` acessam a memória; `ADD`, `SUB`, `MUL`, `DIV` e `CMP` trabalham com registrador e registrador/constante. **O destino vem sempre primeiro** (`OUT porta, R1`).
+- **Registradores:** `R0` a `R7` (uso geral); PC, IR, MAR, MDR e SP; flags Z, N e C.
+- **Memória:** cada instrução ocupa uma palavra, a partir do endereço 0; as variáveis vêm logo depois, na ordem da declaração (vetor = palavras seguidas; texto = uma palavra). A pilha (8 palavras) só existe se o programa usa `CALL rótulo`/`RET`; o SP começa no fim dela e desce.
+- **Busca:** `MAR ← PC`, `MDR ← M[MAR]`, `IR ← MDR`, `PC ← PC + 1`. **Decodificação:** a UC lê o IR. **Execução:** a ULA calcula, o resultado vai para Rn e as flags são atualizadas.
+- **LOAD de variável:** `MAR ← end`, `MDR ← M[end]`, `R1 ← MDR`. **LOAD de constante:** não acessa a memória. **STORE:** `MAR ← end`, `MDR ← R1`, `M[end] ← MDR`. **Vetor:** `LED[R1]` = endereço de LED + R1.
+- **Flags (tabela do slide 8):** Z = 1 se o resultado é 0; N = 1 se é negativo; C = 1 se R1 < R2 sem considerar sinal (no `SUB`/`CMP`; no `ADD`, vai-um em 16 bits; no `MUL`/`DIV`, 0). `CMP` não guarda o resultado.
+- **Portas:** entrada `BOTAO` (0/1), `A0`…`A5` (ADC, 0 a 1023) ou número do pino; saída `LED` (pino 13), `TELA` ou número do pino (0 a 13); `OUT R2, R3` usa o pino cujo número está em R2. Os valores de entrada são definidos na lateral.
+- **`CALL imprime`:** rotina do sistema (como o `printf`): exibe na TELA a variável `TEXTO`, sem quebra de linha. `OUT TELA, R1` exibe o valor e quebra a linha.
+- **`vazio`:** variável sem valor; ler (`LOAD`) uma variável vazia é erro de execução.
+- **Erros de execução:** memória vazia, divisão por zero, índice fora do vetor, pino inválido, pilha cheia/vazia e mais de 2000 instruções (laço infinito).
+- **Sem HALT:** quando o PC passa da última instrução (ex.: o rótulo `FIM:` no fim), o programa termina sem erro.
+- **Exemplos:** os programas de `models/exemplos.ts` são os do slide; acréscimos (como `TEXTO` e `D: vazio`) ficam comentados no código.
 
 ## 5. Como adicionar um módulo novo
 
@@ -96,7 +101,7 @@ npx ng build --base-href /arqlive/         # build de produção sem erros
 npx ng test --watch=false                  # testes unitários (Karma)
 ```
 
-- **Testes unitários:** todos devem passar. O `assembly.spec.ts` confere a montagem, o ciclo de instrução, as flags e a saída de todos os exemplos.
+- **Testes unitários:** todos devem passar. O `assembly.spec.ts` confere a montagem, o ciclo de instrução, as flags (tabela do slide 8), os rastreamentos dos slides 16 e 38 e o resultado de todos os exemplos.
 - **Navegador:** confira a tela nos temas claro e escuro, sem erros no console, e com **zoom de 150 a 175%** (lateral aberta e recolhida), sem rolagem horizontal na página.
 
 ## 7. Entrega (fluxo da professora)

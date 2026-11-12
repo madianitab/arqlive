@@ -1,18 +1,31 @@
 <div class="sim-config">
   <os-panel title="Programa">
-    <label class="rotulo" for="ex">Exemplo</label>
+    <label class="rotulo" for="ex">Exemplo da aula</label>
     <select id="ex" class="form-control" [ngModel]="sim.exemplo()" (ngModelChange)="sim.carregarExemplo($event)">
       @if (!sim.exemplo()) { <option value="">Código próprio</option> }
       @for (e of sim.exemplos; track e.id) { <option [value]="e.id">{{ e.nome }}</option> }
     </select>
-
-    <label class="rotulo" for="entrada">Entrada (valores para o LER)</label>
-    <input id="entrada" class="form-control" type="text" placeholder="ex.: 8 3" [ngModel]="sim.entradaTexto()"
-           (ngModelChange)="sim.editarEntrada($event)" />
-    @if (sim.entrada().invalidos.length) {
-      <p class="hint erro-campo">Valores ignorados: {{ sim.entrada().invalidos.join(', ') }}</p>
-    }
   </os-panel>
+
+  @if (sim.programa().entradasUsadas.length) {
+    <os-panel title="Portas de entrada">
+      <p class="hint">Valores lidos pelo IN. Mudou? A execução é refeita.</p>
+      @for (p of sim.programa().entradasUsadas; track p) {
+        <div class="porta">
+          <span class="porta-nome">{{ rotulo(p) }}</span>
+          @if (analogica(p)) {
+            <input type="range" min="0" max="1023" [ngModel]="sim.valorEntrada(p)" (ngModelChange)="sim.definirEntrada(p, $event)" [attr.aria-label]="p" />
+            <input type="number" class="form-control num" min="0" max="1023" [ngModel]="sim.valorEntrada(p)" (ngModelChange)="sim.definirEntrada(p, $event)" [attr.aria-label]="p + ' (valor)'" />
+          } @else {
+            <button type="button" class="toggle" [class.on]="sim.valorEntrada(p) === 1" [attr.aria-pressed]="sim.valorEntrada(p) === 1"
+                    (click)="sim.definirEntrada(p, sim.valorEntrada(p) ? 0 : 1)">
+              {{ sim.valorEntrada(p) }} · {{ p === 'BOTAO' ? (sim.valorEntrada(p) ? 'apertado' : 'solto') : (sim.valorEntrada(p) ? 'HIGH' : 'LOW') }}
+            </button>
+          }
+        </div>
+      }
+    </os-panel>
+  }
 
   <os-panel title="Passo a passo">
     <div class="modo" role="radiogroup" aria-label="Como avançar">
@@ -23,8 +36,8 @@
     </div>
   </os-panel>
 
-  <os-panel title="Instruções">
-    <p class="hint">Registradores: <code>{{ registradores }}</code>. Operandos: registrador, variável, <code>V[B]</code> ou número.</p>
+  <os-panel title="Assembly simplificado">
+    <p class="hint">O destino vem sempre primeiro. Registradores: <code>R0</code> a <code>R7</code>.</p>
     @for (g of grupos; track g.nome) {
       <div class="rotulo">{{ g.nome }}</div>
       <ul class="ref">
@@ -33,12 +46,21 @@
         }
       </ul>
     }
-    <div class="rotulo">Variáveis</div>
+    <div class="rotulo">Memória e rótulos</div>
     <ul class="ref">
-      <li><code>X = 5</code><span>variável com valor inicial</span></li>
-      <li><code>V = 3, 8, 1</code><span>vetor (posições 0, 1, 2…)</span></li>
-      <li><code>rotulo:</code><span>marca um ponto para os desvios</span></li>
+      <li><code>X: 5</code><span>variável com valor inicial</span></li>
+      <li><code>Y: vazio</code><span>variável sem valor</span></li>
+      <li><code>LED: 8, 9, 10</code><span>vetor: <code>LED[R1]</code></span></li>
+      <li><code>TEXTO: "X = "</code><span>texto exibido pelo <code>CALL imprime</code></span></li>
+      <li><code>LOOP:</code><span>rótulo para os desvios</span></li>
       <li><code>; texto</code><span>comentário</span></li>
+    </ul>
+    <div class="rotulo">Portas</div>
+    <ul class="ref">
+      <li><code>LED</code><span>saída no pino 13</span></li>
+      <li><code>TELA</code><span>saída para exibir valores</span></li>
+      <li><code>BOTAO</code>, <code>A0</code>…<code>A5</code><span>entradas (botão 0/1; sensor 0 a 1023)</span></li>
+      <li><code>OUT R2, R3</code><span>pino indicado pelo número em R2</span></li>
     </ul>
   </os-panel>
 </div>

@@ -1,21 +1,33 @@
 /**
- * Conjunto de instruções do assembly didático do ArqLive.
+ * Conjunto de instruções do "Assembly simplificado" do ArqLive
+ * (padrão das aulas de Arquitetura II — Aula 14, "Do C++ ao Assembly").
  *
- * Para mudar o padrão de assembly (nomes, apelidos, operandos), altere SÓ este arquivo:
- * o montador e o executor leem as definições daqui, e a tela de referência também.
+ * Regra: o destino vem sempre primeiro (inclusive em OUT porta, R1).
+ * Arquitetura RISC, como o AVR do Arduino: LOAD/STORE acessam a memória;
+ * as operações da ULA trabalham só com registradores e constantes.
+ *
+ * Para mudar o padrão (nomes, apelidos, operandos), altere SÓ este arquivo:
+ * o montador, o executor e a referência da tela leem as definições daqui.
  */
 
 /** Tipos de operando aceitos. */
 export type TipoOperando =
-  | 'destino'   // registrador ou variável (recebe valor)
-  | 'origem'    // registrador, variável ou número
-  | 'saida'     // como origem, ou texto entre aspas
-  | 'rotulo';   // nome de um rótulo do programa
+  | 'reg'          // registrador R0…R7
+  | 'regOuConst'   // registrador ou constante
+  | 'memOuConst'   // variável da memória (X ou V[R1]) ou constante
+  | 'mem'          // variável da memória (X ou V[R1])
+  | 'portaEntrada' // BOTAO, A0…A5, número do pino ou registrador com o número
+  | 'portaSaida'   // LED, TELA, número do pino ou registrador com o número
+  | 'rotulo';      // rótulo do programa
 
 export type Operacao =
-  | 'MOV' | 'ADD' | 'SUB' | 'MUL' | 'DIV' | 'MOD' | 'INC' | 'DEC'
+  | 'LOAD' | 'STORE' | 'MOV'
+  | 'ADD' | 'SUB' | 'MUL' | 'DIV'
   | 'CMP' | 'JMP' | 'JE' | 'JNE' | 'JG' | 'JGE' | 'JL' | 'JLE'
-  | 'LER' | 'ESCREVER' | 'NOP' | 'HLT';
+  | 'IN' | 'OUT' | 'DELAY'
+  | 'CALL' | 'RET' | 'NOP' | 'HALT';
+
+export type Grupo = 'Memória e registradores' | 'ULA' | 'Comparação e desvio' | 'Entrada e saída (portas)' | 'Controle';
 
 export interface DefInstrucao {
   op: Operacao;
@@ -26,40 +38,64 @@ export interface DefInstrucao {
   uso: string;
   /** Explicação curta (aparece na decodificação). */
   descricao: string;
-  /** Grupo na referência. */
-  grupo: 'Dados' | 'Aritmética' | 'Comparação e desvio' | 'Entrada e saída' | 'Controle';
+  /** Equivalente em C++ (referência). */
+  cpp?: string;
+  /** A instrução usa a ULA? */
+  ula: boolean;
+  grupo: Grupo;
+  /** Instrução que não está no slide da aula (acréscimo do simulador). */
+  extra?: boolean;
 }
 
 export const INSTRUCOES: DefInstrucao[] = [
-  { op: 'MOV', apelidos: ['MOVER'], operandos: ['destino', 'origem'], uso: 'MOV destino, origem', descricao: 'copia a origem para o destino', grupo: 'Dados' },
+  { op: 'LOAD', apelidos: [], operandos: ['reg', 'memOuConst'], uso: 'LOAD R1, X', descricao: 'lê da memória (ou uma constante) para o registrador', cpp: 'R1 = X;  R1 = 1;', ula: false, grupo: 'Memória e registradores' },
+  { op: 'STORE', apelidos: [], operandos: ['mem', 'reg'], uso: 'STORE X, R1', descricao: 'grava o registrador na memória', cpp: 'X = R1;', ula: false, grupo: 'Memória e registradores' },
+  { op: 'MOV', apelidos: [], operandos: ['reg', 'reg'], uso: 'MOV R2, R1', descricao: 'copia entre registradores', cpp: 'R2 = R1;', ula: false, grupo: 'Memória e registradores' },
 
-  { op: 'ADD', apelidos: ['SOMAR'], operandos: ['destino', 'origem'], uso: 'ADD destino, origem', descricao: 'destino ← destino + origem', grupo: 'Aritmética' },
-  { op: 'SUB', apelidos: ['SUBTRAIR'], operandos: ['destino', 'origem'], uso: 'SUB destino, origem', descricao: 'destino ← destino − origem', grupo: 'Aritmética' },
-  { op: 'MUL', apelidos: ['MULTIPLICAR'], operandos: ['destino', 'origem'], uso: 'MUL destino, origem', descricao: 'destino ← destino × origem', grupo: 'Aritmética' },
-  { op: 'DIV', apelidos: ['DIVIDIR'], operandos: ['destino', 'origem'], uso: 'DIV destino, origem', descricao: 'destino ← destino ÷ origem (divisão inteira)', grupo: 'Aritmética' },
-  { op: 'MOD', apelidos: ['RESTO'], operandos: ['destino', 'origem'], uso: 'MOD destino, origem', descricao: 'destino ← resto de destino ÷ origem', grupo: 'Aritmética' },
-  { op: 'INC', apelidos: [], operandos: ['destino'], uso: 'INC destino', descricao: 'destino ← destino + 1', grupo: 'Aritmética' },
-  { op: 'DEC', apelidos: [], operandos: ['destino'], uso: 'DEC destino', descricao: 'destino ← destino − 1', grupo: 'Aritmética' },
+  { op: 'ADD', apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'ADD R1, R2', descricao: 'a ULA soma e guarda em R1; atualiza as flags', cpp: 'R1 = R1 + R2;', ula: true, grupo: 'ULA' },
+  { op: 'SUB', apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'SUB R1, R2', descricao: 'a ULA subtrai e guarda em R1; atualiza as flags', cpp: 'R1 = R1 - R2;', ula: true, grupo: 'ULA' },
+  { op: 'MUL', apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'MUL R1, R2', descricao: 'a ULA multiplica e guarda em R1; atualiza as flags', cpp: 'R1 = R1 * R2;', ula: true, grupo: 'ULA' },
+  { op: 'DIV', apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'DIV R1, R2', descricao: 'a ULA divide (divisão inteira) e guarda em R1; atualiza as flags', cpp: 'R1 = R1 / R2;', ula: true, grupo: 'ULA', extra: true },
 
-  { op: 'CMP', apelidos: ['COMPARAR'], operandos: ['origem', 'origem'], uso: 'CMP a, b', descricao: 'compara a com b e atualiza as flags Z e N', grupo: 'Comparação e desvio' },
-  { op: 'JMP', apelidos: ['DESVIE'], operandos: ['rotulo'], uso: 'JMP rótulo', descricao: 'desvia sempre para o rótulo', grupo: 'Comparação e desvio' },
-  { op: 'JE', apelidos: ['JZ'], operandos: ['rotulo'], uso: 'JE rótulo', descricao: 'desvia se a = b (Z = 1)', grupo: 'Comparação e desvio' },
-  { op: 'JNE', apelidos: ['JNZ'], operandos: ['rotulo'], uso: 'JNE rótulo', descricao: 'desvia se a ≠ b (Z = 0)', grupo: 'Comparação e desvio' },
-  { op: 'JG', apelidos: [], operandos: ['rotulo'], uso: 'JG rótulo', descricao: 'desvia se a > b (Z = 0 e N = 0)', grupo: 'Comparação e desvio' },
-  { op: 'JGE', apelidos: [], operandos: ['rotulo'], uso: 'JGE rótulo', descricao: 'desvia se a ≥ b (N = 0)', grupo: 'Comparação e desvio' },
-  { op: 'JL', apelidos: [], operandos: ['rotulo'], uso: 'JL rótulo', descricao: 'desvia se a < b (N = 1)', grupo: 'Comparação e desvio' },
-  { op: 'JLE', apelidos: [], operandos: ['rotulo'], uso: 'JLE rótulo', descricao: 'desvia se a ≤ b (N = 1 ou Z = 1)', grupo: 'Comparação e desvio' },
+  { op: 'CMP', apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'CMP R1, R2', descricao: 'compara (R1 − R2, sem guardar) e atualiza as flags Z, N e C', cpp: 'if (R1 == R2)', ula: true, grupo: 'Comparação e desvio' },
+  { op: 'JMP', apelidos: [], operandos: ['rotulo'], uso: 'JMP ROTULO', descricao: 'muda o PC sempre', cpp: 'for, while', ula: false, grupo: 'Comparação e desvio' },
+  { op: 'JE', apelidos: ['JZ'], operandos: ['rotulo'], uso: 'JE ROTULO', descricao: 'muda o PC se for igual (Z = 1)', cpp: 'if (==)', ula: false, grupo: 'Comparação e desvio' },
+  { op: 'JNE', apelidos: ['JNZ'], operandos: ['rotulo'], uso: 'JNE ROTULO', descricao: 'muda o PC se for diferente (Z = 0)', cpp: 'if (!=)', ula: false, grupo: 'Comparação e desvio' },
+  { op: 'JG', apelidos: [], operandos: ['rotulo'], uso: 'JG ROTULO', descricao: 'muda o PC se for maior (Z = 0 e N = 0)', cpp: 'if (>)', ula: false, grupo: 'Comparação e desvio', extra: true },
+  { op: 'JGE', apelidos: [], operandos: ['rotulo'], uso: 'JGE ROTULO', descricao: 'muda o PC se for maior ou igual (N = 0)', cpp: 'if (>=)', ula: false, grupo: 'Comparação e desvio', extra: true },
+  { op: 'JL', apelidos: [], operandos: ['rotulo'], uso: 'JL ROTULO', descricao: 'muda o PC se for menor (N = 1)', cpp: 'if (<)', ula: false, grupo: 'Comparação e desvio', extra: true },
+  { op: 'JLE', apelidos: [], operandos: ['rotulo'], uso: 'JLE ROTULO', descricao: 'muda o PC se for menor ou igual (N = 1 ou Z = 1)', cpp: 'if (<=)', ula: false, grupo: 'Comparação e desvio', extra: true },
 
-  { op: 'LER', apelidos: ['IN', 'INPUT'], operandos: ['destino'], uso: 'LER destino', descricao: 'lê o próximo valor da entrada', grupo: 'Entrada e saída' },
-  { op: 'ESCREVER', apelidos: ['OUT', 'PRINT', 'MOSTRAR'], operandos: ['saida'], uso: 'ESCREVER origem  ou  ESCREVER "texto"', descricao: 'mostra o valor (ou o texto) na saída', grupo: 'Entrada e saída' },
+  { op: 'IN', apelidos: [], operandos: ['reg', 'portaEntrada'], uso: 'IN R1, BOTAO', descricao: 'lê um pino ou sensor para o registrador', cpp: 'R1 = digitalRead(p);', ula: false, grupo: 'Entrada e saída (portas)' },
+  { op: 'OUT', apelidos: [], operandos: ['portaSaida', 'reg'], uso: 'OUT LED, R1', descricao: 'envia o valor do registrador para a porta de saída', cpp: 'digitalWrite(p, R1);', ula: false, grupo: 'Entrada e saída (portas)' },
+  { op: 'DELAY', apelidos: [], operandos: ['regOuConst'], uso: 'DELAY 1000', descricao: 'pausa (em milissegundos)', cpp: 'delay(1000);', ula: false, grupo: 'Entrada e saída (portas)' },
 
-  { op: 'NOP', apelidos: [], operandos: [], uso: 'NOP', descricao: 'não faz nada', grupo: 'Controle' },
-  { op: 'HLT', apelidos: ['HALT', 'PARAR'], operandos: [], uso: 'HLT', descricao: 'encerra o programa', grupo: 'Controle' },
+  { op: 'CALL', apelidos: [], operandos: ['rotulo'], uso: 'CALL imprime', descricao: 'chama uma sub-rotina (CALL imprime exibe o TEXTO da memória)', cpp: 'printf(...);', ula: false, grupo: 'Controle' },
+  { op: 'RET', apelidos: [], operandos: [], uso: 'RET', descricao: 'volta da sub-rotina (o PC recebe o endereço guardado na pilha)', ula: false, grupo: 'Controle', extra: true },
+  { op: 'NOP', apelidos: [], operandos: [], uso: 'NOP', descricao: 'não faz nada', ula: false, grupo: 'Controle', extra: true },
+  { op: 'HALT', apelidos: ['HLT'], operandos: [], uso: 'HALT', descricao: 'encerra o programa', ula: false, grupo: 'Controle' },
 ];
 
 /** Registradores de uso geral. */
-export const REGISTRADORES = ['A', 'B', 'C', 'D'] as const;
+export const REGISTRADORES = ['R0', 'R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7'] as const;
 export type Registrador = typeof REGISTRADORES[number];
+
+/** Portas de entrada com nome e faixa de valores. */
+export const PORTAS_ENTRADA: { nome: string; min: number; max: number; descricao: string }[] = [
+  { nome: 'BOTAO', min: 0, max: 1, descricao: 'botão: 0 = solto, 1 = apertado' },
+  ...['A0', 'A1', 'A2', 'A3', 'A4', 'A5'].map(n => ({ nome: n, min: 0, max: 1023, descricao: 'pino analógico (ADC 10 bits): 0 a 1023' })),
+];
+
+/** Saídas com nome. Os pinos digitais também podem ser usados pelo número (0 a 13). */
+export const PINO_LED = 13;
+export const PINO_MAX = 13;
+
+/** Sub-rotina do sistema: CALL imprime exibe a variável TEXTO (como o printf). */
+export const ROTINA_IMPRIME = 'IMPRIME';
+export const VARIAVEL_TEXTO = 'TEXTO';
+
+/** Tamanho da pilha (palavras), usada pelo CALL/RET de sub-rotinas do programa. */
+export const TAMANHO_PILHA = 8;
 
 /** Limite de instruções executadas (evita travar a tela num laço infinito). */
 export const LIMITE_INSTRUCOES = 2000;
@@ -75,7 +111,12 @@ export function ehRegistrador(nome: string): boolean {
   return (REGISTRADORES as readonly string[]).includes(nome.toUpperCase());
 }
 
+/** Parece um registrador (R seguido de número), mesmo fora de R0…R7. */
+export function pareceRegistrador(nome: string): boolean {
+  return /^R\d+$/i.test(nome);
+}
+
 /** Palavras que não podem ser usadas como nome de variável ou rótulo. */
 export function ehReservada(nome: string): boolean {
-  return ehRegistrador(nome) || POR_NOME.has(nome.toUpperCase());
+  return pareceRegistrador(nome) || POR_NOME.has(nome.toUpperCase());
 }

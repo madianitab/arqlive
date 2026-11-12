@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { OsPanelComponent } from 'src/app/ui/panel/panel.component';
 import { SimuladorAssemblyService } from 'src/app/features/assembly/services/simulador-assembly.service';
-import { DefInstrucao, INSTRUCOES, REGISTRADORES } from 'src/app/features/assembly/models/instrucoes';
+import { DefInstrucao, INSTRUCOES, PORTAS_ENTRADA } from 'src/app/features/assembly/models/instrucoes';
 
 @Component({
   selector: 'app-lateral-assembly',
@@ -12,7 +12,6 @@ import { DefInstrucao, INSTRUCOES, REGISTRADORES } from 'src/app/features/assemb
   imports: [FormsModule, OsPanelComponent],
 })
 export class LateralAssemblyComponent {
-  readonly registradores = REGISTRADORES.join(', ');
   readonly grupos: { nome: string; itens: DefInstrucao[] }[] = [];
 
   constructor(public sim: SimuladorAssemblyService) {
@@ -21,5 +20,14 @@ export class LateralAssemblyComponent {
       if (!g) this.grupos.push(g = { nome: d.grupo, itens: [] });
       g.itens.push(d);
     }
+  }
+
+  /** Porta analógica (0 a 1023) ou digital (0/1). */
+  analogica(nome: string): boolean {
+    return (PORTAS_ENTRADA.find(p => p.nome === nome)?.max ?? 1) > 1;
+  }
+
+  rotulo(nome: string): string {
+    return /^\d+$/.test(nome) ? `Pino ${nome}` : nome === 'BOTAO' ? 'BOTAO' : `${nome} (sensor)`;
   }
 }

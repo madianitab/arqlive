@@ -14,15 +14,19 @@ export function destacarAssembly(linha: string): string {
   while (i < linha.length) {
     const resto = linha.slice(i);
     let m: RegExpMatchArray | null;
-    if (resto.startsWith(';') || resto.startsWith('//')) { html += span('hl-c', resto); break; }
+    if (resto.startsWith(';')) { html += span('hl-c', resto); break; }
     if ((m = resto.match(/^\s+/))) { html += m[0]; i += m[0].length; continue; }
     if ((m = resto.match(/^"[^"]*"?/))) { html += span('hl-s', m[0]); i += m[0].length; inicio = false; continue; }
     if (inicio && (m = resto.match(/^\.[A-Za-zçÇ]+/))) { html += span('hl-p', m[0]); i += m[0].length; inicio = false; continue; }
     if (inicio && (m = resto.match(/^[A-Za-z_]\w*\s*:/))) { html += span('hl-p', m[0]); i += m[0].length; continue; }
+    if ((m = resto.match(/^'.'/))) { html += span('hl-n', m[0]); i += m[0].length; inicio = false; continue; }
     if ((m = resto.match(/^[+-]?(0x[0-9a-fA-F]+|0b[01]+|\d+)\b/))) { html += span('hl-n', m[0]); i += m[0].length; inicio = false; continue; }
     if ((m = resto.match(/^[A-Za-z_]\w*/))) {
       const w = m[0];
-      html += buscarInstrucao(w) ? span('hl-k', w) : ehRegistrador(w) ? span('hl-f', w) : esc(w);
+      html += buscarInstrucao(w) ? span('hl-k', w)
+        : ehRegistrador(w) ? span('hl-f', w)
+        : /^(vazio|HIGH|LOW)$/i.test(w) ? span('hl-n', w)
+        : esc(w);
       i += w.length;
       inicio = false;
       continue;

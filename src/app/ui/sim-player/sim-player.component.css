@@ -5,6 +5,6 @@
   font: 600 12px/1 var(--f-mono); cursor: pointer; color: var(--text); }
 .btn.primary { background: var(--a); color: #fff; border-color: var(--a); }
 .btn:disabled { opacity: .4; cursor: default; }
-.scrub { flex: 1; accent-color: var(--a); }
+.scrub { flex: 1; min-width: 0; accent-color: var(--a); }
 .pos { font: 500 12px/1 var(--f-mono); color: var(--text-2); white-space: nowrap; }
 .vel { font: 500 12px/1 var(--f-mono); border: 1px solid var(--line); border-radius: 6px; padding: 5px; }

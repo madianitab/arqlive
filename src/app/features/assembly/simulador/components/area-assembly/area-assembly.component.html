@@ -3,7 +3,7 @@
     <os-stat label="Instruções executadas" [value]="sim.instrucoesExecutadas()" [accent]="true"></os-stat>
     <os-stat label="Instruções no programa" [value]="sim.programa().instrucoes.length"></os-stat>
     <os-stat label="Memória usada" [value]="sim.programa().tamanhoMemoria" unit="palavras"></os-stat>
-    <os-stat label="Linhas de saída" [value]="sim.passo()?.saida?.length ?? 0"></os-stat>
+    <os-stat label="Tempo (DELAY)" [value]="sim.passo()?.tempo ?? 0" unit="ms"></os-stat>
   </div>
 
   <section class="duas">
@@ -32,7 +32,7 @@
           <div class="narr-topo">
             <span class="chip-fase" [attr.data-fase]="p.fase">{{ rotuloFase[p.fase] }}</span>
             @if (p.ciclo > 0) { <span class="narr-ciclo">instrução {{ p.ciclo }}</span> }
-            @if (p.ir && p.fase !== 'carga') { <code class="narr-ir">{{ p.ir }}</code> }
+            @if (p.ir && p.fase !== 'carga' && p.end !== null) { <code class="narr-ir">{{ p.ir }}</code> }
           </div>
           <ul class="micro">
             @for (m of p.micro; track $index) { <li>{{ m }}</li> }
@@ -41,22 +41,35 @@
 
         <div class="cpu">
           <div class="cpu-grupo">
-            <div class="cpu-titulo">Unidade de controle</div>
+            <div class="cpu-titulo">Unidade de controle (UC)</div>
             <div class="regs">
               <div class="reg" [class.mudou]="mudou('PC')"><span class="r-nome">PC</span><span class="r-val">{{ p.pc }}</span></div>
               <div class="reg largo" [class.mudou]="mudou('IR')"><span class="r-nome">IR</span><span class="r-val">{{ p.ir || '—' }}</span></div>
               <div class="reg" [class.mudou]="mudou('MAR')"><span class="r-nome">MAR</span><span class="r-val">{{ p.mar ?? '—' }}</span></div>
               <div class="reg largo" [class.mudou]="mudou('MDR')"><span class="r-nome">MDR</span><span class="r-val">{{ p.mdr ?? '—' }}</span></div>
+              <div class="reg" [class.mudou]="mudou('SP')" title="Stack Pointer: topo da pilha (usada por CALL e RET)"><span class="r-nome">SP</span><span class="r-val">{{ p.sp ?? '—' }}</span></div>
             </div>
           </div>
           <div class="cpu-grupo">
-            <div class="cpu-titulo">Registradores e flags</div>
+            <div class="cpu-titulo">Registradores de uso geral</div>
             <div class="regs">
               @for (r of gerais; track r) {
-                <div class="reg" [class.mudou]="mudou(r)"><span class="r-nome">{{ r }}</span><span class="r-val">{{ p.regs[r] }}</span></div>
+                <div class="reg curto" [class.mudou]="mudou(r)"><span class="r-nome">{{ r }}</span><span class="r-val">{{ p.regs[r] }}</span></div>
               }
-              <div class="reg flag" [class.mudou]="mudou('Z')" title="Zero: o último resultado foi 0"><span class="r-nome">Z</span><span class="r-val">{{ p.z }}</span></div>
-              <div class="reg flag" [class.mudou]="mudou('N')" title="Negativo: o último resultado foi menor que 0"><span class="r-nome">N</span><span class="r-val">{{ p.n }}</span></div>
+            </div>
+          </div>
+          <div class="cpu-linha">
+            <div class="cpu-grupo ula" [class.ativa]="p.ula !== null">
+              <div class="cpu-titulo">ULA</div>
+              <div class="ula-conta">{{ p.ula ?? 'sem uso neste passo' }}</div>
+            </div>
+            <div class="cpu-grupo flags">
+              <div class="cpu-titulo">Flags</div>
+              <div class="regs">
+                <div class="reg flag" [class.mudou]="mudou('Z')" title="Zero: o resultado foi 0 (iguais)"><span class="r-nome">Z</span><span class="r-val">{{ p.z }}</span></div>
+                <div class="reg flag" [class.mudou]="mudou('N')" title="Negativo: o resultado foi menor que 0"><span class="r-nome">N</span><span class="r-val">{{ p.n }}</span></div>
+                <div class="reg flag" [class.mudou]="mudou('C')" title="Carry: “empresta 1” (R1 < R2, sem considerar sinal)"><span class="r-nome">C</span><span class="r-val">{{ p.c }}</span></div>
+              </div>
             </div>
           </div>
         </div>
@@ -83,12 +96,13 @@
             <thead><tr><th>End.</th><th>Conteúdo</th><th>Nome</th></tr></thead>
             <tbody>
               @for (c of celulas(); track c.end) {
-                <tr [class.dado]="c.dado" [class.atual]="!c.dado && c.end === p.end"
+                <tr [attr.data-tipo]="c.tipo" [class.atual]="c.tipo === 'instrucao' && c.end === p.end"
                     [class.acesso]="acesso(c.end)" [attr.data-acesso]="acesso(c.end)" [class.mudou]="mudou('M' + c.end)">
                   <td class="m-end">{{ c.end }}</td>
-                  <td class="m-cont">{{ c.conteudo }}</td>
+                  <td class="m-cont" [class.vazio]="c.vazio">{{ c.conteudo }}</td>
                   <td class="m-nome">
-                    @if (!c.dado && c.end === p.pc && p.fase !== 'fim' && p.fase !== 'erro') { <span class="pc-tag" title="Próxima instrução (PC)">PC</span> }
+                    @if (c.tipo === 'instrucao' && c.end === p.pc && p.fase !== 'fim' && p.fase !== 'erro') { <span class="tag" title="Próxima instrução (PC)">PC</span> }
+                    @if (c.tipo === 'pilha' && c.end === p.sp) { <span class="tag" title="Topo da pilha (SP)">SP</span> }
                     {{ c.nome }}
                   </td>
                 </tr>
@@ -102,20 +116,36 @@
           <span><i class="lg escrita"></i>escrita</span>
         </div>
       </div>
+
       <div class="col">
-        <div class="viz-label">Saída</div>
-        <os-terminal label="saída">
+        <div class="viz-label">Portas (Arduino)</div>
+        <div class="portas">
+          @for (pin of pinos(); track pin) {
+            <div class="pino" [class.ligado]="(valorPino(pin) ?? 0) !== 0" [class.ativa]="portaAtiva('saida', '' + pin)">
+              <span class="lampada" aria-hidden="true"></span>
+              <span class="p-nome">{{ pin === pinoLed ? 'LED' : 'Pino ' + pin }}</span>
+              <span class="p-val">{{ pin === pinoLed ? 'pino 13 · ' : '' }}{{ valorPino(pin) === null ? '—' : (valorPino(pin) ? 'HIGH' : 'LOW') }}</span>
+            </div>
+          }
+          @for (e of sim.programa().entradasUsadas; track e) {
+            <div class="pino entrada" [class.ativa]="portaAtiva('entrada', e)">
+              <span class="seta" aria-hidden="true">→</span>
+              <span class="p-nome">{{ e === 'BOTAO' || e.startsWith('A') ? e : 'Pino ' + e }}</span>
+              <span class="p-val">entrada = {{ sim.valorEntrada(e) }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="viz-label">Tela</div>
+        <os-terminal label="TELA">
           <div class="saida" #saidaScroll>
-            @for (s of p.saida; track $index; let ultimo = $last) {
+            @for (s of linhasSaida(); track $index; let ultimo = $last) {
               <div class="sl" [class.nova]="ultimo && mudou('SAIDA')">{{ s }}</div>
             } @empty {
-              <div class="vazia">(sem saída até aqui)</div>
+              <div class="vazia">(nada exibido até aqui)</div>
             }
           </div>
         </os-terminal>
-        @if (sim.entrada().valores.length) {
-          <p class="obs">Entrada: {{ sim.entrada().valores.join(' ') }}</p>
-        }
       </div>
     </section>
   }
