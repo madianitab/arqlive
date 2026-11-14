@@ -57,6 +57,67 @@ describe('C++ no estilo das aulas (sem registradores)', () => {
     expect(r.codigo).toContain('goto L;');
   });
 
+  it('zero implícito do registrador não aparece na soma (observação da monitoria)', () => {
+    const r = cpp('X: 0\nADD R1, 12\nADD R1, 8\nMUL R1, 7\nSTORE X, R1\nOUT TELA, R1\nHALT');
+    expect(r.nivel).toBe('alto');
+    expect(linhas(r.codigo)).toContain('X = (12 + 8) * 7;');
+    // LOAD R1, 0 explícito continua aparecendo
+    expect(linhas(cpp('X: 0\nLOAD R1, 0\nADD R1, 12\nSTORE X, R1').codigo)).toContain('X = 0 + 12;');
+  });
+
+  it('registrador que acumula valor no laço vira variável local (observação da monitoria)', () => {
+    const r = cpp(`X: 0
+LOAD R1, 0
+LOAD R2, 1
+LOOP:
+  CMP R1, 3
+  JE FIM
+  MUL R2, 2
+  ADD R1, 1
+  JMP LOOP
+FIM:
+STORE X, R2
+OUT TELA, R2
+HALT`);
+    expect(r.nivel).toBe('alto');
+    expect(linhas(r.codigo)).toEqual(['#include <stdio.h>', 'int main() {', 'int X = 0;', 'int valor = 1;',
+      'for (int i = 0; i < 3; i++) {', 'valor = valor * 2;', '}', 'X = valor;', 'printf("%d", X);', '}']);
+  });
+
+  it('acumulador com zero implícito e soma condicional dentro do laço', () => {
+    const r = cpp(`V: 3, 8, 5
+LOAD R1, 0
+LOOP:
+  CMP R1, 3
+  JE FIM
+  LOAD R3, V[R1]
+  CMP R3, 4
+  JL PULA
+  ADD R2, 1
+PULA:
+  ADD R1, 1
+  JMP LOOP
+FIM:
+OUT TELA, R2`);
+    expect(r.nivel).toBe('alto');
+    expect(linhas(r.codigo)).toEqual(jasmine.arrayContaining(['int valor = 0;', 'for (int i = 0; i < 3; i++) {',
+      'if (V[i] >= 4) {', 'valor++;', 'printf("%d", valor);']));
+  });
+
+  it('while com o registrador da condição mudando no corpo', () => {
+    const r = cpp(`LOAD R1, 5
+LOOP:
+  CMP R1, 0
+  JE FIM
+  OUT TELA, R1
+  SUB R1, 1
+  JMP LOOP
+FIM:
+HALT`);
+    expect(r.nivel).toBe('alto');
+    expect(linhas(r.codigo)).toEqual(jasmine.arrayContaining(['int valor = 5;', 'while (valor != 0) {', 'printf("%d", valor);', 'valor--;']));
+  });
+
   it('todos os exemplos saem no estilo das aulas', () => {
     EXEMPLOS_ASSEMBLY.forEach(e => expect(cpp(e.codigo).nivel).withContext(e.id).toBe('alto'));
   });
