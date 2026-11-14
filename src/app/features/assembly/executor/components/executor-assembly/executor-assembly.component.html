@@ -75,7 +75,7 @@
         </div>
         @if (cpp()) {
           @if (traducao()?.nivel === 'direto') {
-            <p class="nota">Este programa tem desvios fora dos padrões de if/for: o C++ foi traduzido instrução por instrução.</p>
+            <p class="nota">Não foi possível montar o C++ no estilo das aulas para este programa (ex.: desvios fora dos padrões de if/for/while ou sub-rotina com CALL): o C++ foi traduzido instrução por instrução.</p>
           }
           <pre class="cpp">{{ cpp() }}</pre>
         } @else {
