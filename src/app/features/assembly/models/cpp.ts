@@ -8,8 +8,12 @@
  *
  * Como funciona: os registradores guardam EXPRESSÕES (não valores). Um STORE grava a
  * expressão na variável; IN/OUT/DELAY viram as funções do Arduino; CMP + desvio viram
- * if/if-else/for/while quando seguem esses padrões. Se o programa tiver um desvio fora
- * desses padrões (ou CALL de sub-rotina), usa a tradução direta (cpp-direto.ts).
+ * if/if-else/for/while quando seguem esses padrões. Um registrador que leva valor de
+ * uma volta do laço para a outra sem passar pela memória vira uma variável local
+ * (int valor = 1; … valor = valor * 2;). O zero que o registrador tem antes de receber
+ * valor não aparece nas somas (ADD R1, 12 sem LOAD → 12, e não 0 + 12).
+ * Se o programa tiver um desvio fora desses padrões (ou CALL de sub-rotina), usa a
+ * tradução direta (cpp-direto.ts).
  */
 import { Instrucao, Operando, Programa } from './assembly';
 import { gerarCppDireto } from './cpp-direto';
@@ -18,7 +22,8 @@ import { PINO_LED, REGISTRADORES, Registrador, VARIAVEL_TEXTO } from './instruco
 // ─────────────────────────── expressões ───────────────────────────
 
 type Expr =
-  | { k: 'num'; v: number; txt: string }
+  /** imp: o 0 que o registrador tem antes de receber valor (zero implícito). */
+  | { k: 'num'; v: number; txt: string; imp?: boolean }
   | { k: 'var'; n: string }
   | { k: 'idx'; n: string; i: Expr }
   | { k: 'bin'; op: '+' | '-' | '*' | '/'; l: Expr; r: Expr }
@@ -65,6 +70,19 @@ function trocar(e: Expr, de: Expr, para: Expr): Expr {
 }
 
 const valido = (e: Expr) => { mostrar(e); return e; };
+
+/** Soma com o zero implícito do registrador: o zero some (0 + 12 → 12). */
+function somar(l: Expr, r: Expr): Expr {
+  if (l.k === 'num' && l.imp) return r;
+  return { k: 'bin', op: '+', l, r };
+}
+
+/** Linha de atribuição, com ++/-- quando for o caso (Y++;). */
+function atribuicao(nome: string, e: Expr): string {
+  const um = (x: Expr) => x.k === 'num' && x.v === 1;
+  if (e.k === 'bin' && e.l.k === 'var' && e.l.n === nome && um(e.r) && (e.op === '+' || e.op === '-')) return `${nome}${e.op}${e.op};`;
+  return `${nome} = ${mostrar(e)};`;
+}
 
 class NaoEstruturado extends Error {}
 
@@ -113,6 +131,9 @@ class Tradutor {
   private usaBotao = false;
   private usaTela = false;
   private pinosConstantes = new Set<number>();
+  /** Registradores que guardam valor entre as voltas de um laço → variável local do C++. */
+  private locais = new Map<Registrador, string>();
+  private nomesUsados = new Set<string>();
 
   constructor(private readonly p: Programa) {
     this.ins = p.instrucoes;
@@ -120,11 +141,13 @@ class Tradutor {
     p.rotulos.forEach(r => this.rotuloEm.set(r.end, r.nome));
     const t = p.variaveis.find(v => v.nome.toUpperCase() === VARIAVEL_TEXTO);
     this.texto = t && typeof t.valores[0] === 'string' ? t.valores[0] : null;
+    p.variaveis.forEach(v => this.nomesUsados.add(v.nome.toLowerCase()));
+    ['i', 'j', 'k', 'p', 'led', 'botao'].forEach(n => this.nomesUsados.add(n));
   }
 
   gerar(): string {
     const st = {} as Estado;
-    REGISTRADORES.forEach(r => st[r] = { k: 'num', v: 0, txt: '0' });
+    REGISTRADORES.forEach(r => st[r] = { k: 'num', v: 0, txt: '0', imp: true });
     const corpo = this.bloco(0, this.ins.length, st, 1, true);
     this.fecharTexto(corpo, 1);
 
@@ -189,12 +212,14 @@ class Tradutor {
 
       const [a, b] = it.operandos;
       switch (op) {
-        case 'LOAD': st[this.reg(a)] = this.expr(b, st); break;
-        case 'MOV': st[this.reg(a)] = valido(st[this.reg(b)]); break;
+        case 'LOAD': this.definir(this.reg(a), this.expr(b, st), st, emitir); break;
+        case 'MOV': this.definir(this.reg(a), valido(st[this.reg(b)]), st, emitir); break;
         case 'ADD': case 'SUB': case 'MUL': case 'DIV': {
           const r = this.reg(a);
+          const l = valido(st[r]);
+          const d = valido(this.expr(b, st));
           const simb = ({ ADD: '+', SUB: '-', MUL: '*', DIV: '/' } as const)[op];
-          st[r] = { k: 'bin', op: simb, l: valido(st[r]), r: valido(this.expr(b, st)) };
+          this.definir(r, simb === '+' ? somar(l, d) : { k: 'bin', op: simb, l, r: d }, st, emitir);
           break;
         }
         case 'CMP': case 'NOP': break;
@@ -203,7 +228,7 @@ class Tradutor {
           const nome = b.t === 'porta' ? b.nome : b.t === 'pino' ? String(b.v) : mostrar(st[this.reg(b)]);
           const analog = /^A\d$/.test(nome);
           if (nome === 'BOTAO') this.usaBotao = true;
-          st[this.reg(a)] = { k: 'call', txt: `${analog ? 'analogRead' : 'digitalRead'}(${nome === 'BOTAO' ? 'botao' : nome})`, digital: !analog };
+          this.definir(this.reg(a), { k: 'call', txt: `${analog ? 'analogRead' : 'digitalRead'}(${nome === 'BOTAO' ? 'botao' : nome})`, digital: !analog }, st, emitir);
           break;
         }
         case 'OUT': {
@@ -249,6 +274,62 @@ class Tradutor {
     return out;
   }
 
+  /**
+   * Novo valor do registrador. Se ele está ligado a uma variável local (laço),
+   * a atribuição vai para o código na hora; senão, ele só guarda a expressão.
+   */
+  private definir(r: Registrador, novo: Expr, st: Estado, emitir: (l: string) => void): void {
+    const nome = this.locais.get(r);
+    if (!nome) { st[r] = novo; return; }
+    const v: Expr = { k: 'var', n: nome };
+    if (igual(novo, v)) return;
+    emitir(atribuicao(nome, valido(novo)));
+    REGISTRADORES.forEach(k => { if (k !== r && usaVar(st[k], nome)) st[k] = { k: 'inval' }; });
+    st[r] = v;
+  }
+
+  /** Valor do registrador depois de um bloco que o alterou. */
+  private aposMudanca(r: Registrador): Expr {
+    const nome = this.locais.get(r);
+    return nome ? { k: 'var', n: nome } : { k: 'inval' };
+  }
+
+  private novoLocal(): string {
+    for (let n = 1; ; n++) {
+      const nome = n === 1 ? 'valor' : `valor${n}`;
+      if (!this.nomesUsados.has(nome)) { this.nomesUsados.add(nome); return nome; }
+    }
+  }
+
+  /** Registradores lidos pela instrução. */
+  private lidos(it: Instrucao): Registrador[] {
+    const so = ['LOAD', 'MOV', 'IN'].includes(it.def.op);
+    const r: Registrador[] = [];
+    it.operandos.forEach((o, k) => {
+      if (o.t === 'reg' && !(so && k === 0)) r.push(o.r);
+      if (o.t === 'mem' && o.indice?.t === 'reg') r.push(o.indice.r);
+    });
+    return r;
+  }
+
+  /**
+   * Registradores lidos no corpo [s, e) antes de receberem valor novo:
+   * guardam o valor da volta anterior. Escrita depois de um desvio não conta como certa.
+   */
+  private vivos(s: number, e: number): Set<Registrador> {
+    const vivos = new Set<Registrador>();
+    const definidos = new Set<Registrador>();
+    let condicional = false;
+    for (let k = s; k < e; k++) {
+      const it = this.ins[k];
+      this.lidos(it).forEach(r => { if (!definidos.has(r)) vivos.add(r); });
+      if (it.def.op === 'JMP' || DESVIOS.has(it.def.op)) { condicional = true; continue; }
+      const a = it.operandos[0];
+      if (!condicional && a?.t === 'reg' && ['LOAD', 'MOV', 'IN', 'ADD', 'SUB', 'MUL', 'DIV'].includes(it.def.op)) definidos.add(a.r);
+    }
+    return vivos;
+  }
+
   /** Texto do CALL imprime que não foi seguido de OUT TELA. */
   private fecharTexto(out: string[], nivel: number): void {
     if (this.textoPendente === null) return;
@@ -270,9 +351,7 @@ class Tradutor {
       REGISTRADORES.forEach(k => { if (k !== r && usaVar(st[k], a.nome)) st[k] = { k: 'inval' }; });
     } else {
       novo = { k: 'var', n: a.nome };
-      const um = (x: Expr) => x.k === 'num' && x.v === 1;
-      if (e.k === 'bin' && e.l.k === 'var' && e.l.n === a.nome && um(e.r) && (e.op === '+' || e.op === '-')) linha = `${a.nome}${e.op}${e.op};`;
-      else linha = `${a.nome} = ${mostrar(e)};`;
+      linha = atribuicao(a.nome, e);
       // a variável mudou: o que dependia do valor antigo passa a usar o novo, se der
       // (ex.: R2 = B + A * B e STORE A com A * B  →  R2 = B + A); senão fica inválido
       const marca: Expr = { k: 'var', n: '\u0000novo' };
@@ -282,7 +361,7 @@ class Tradutor {
         st[k] = usaVar(t, a.nome) ? { k: 'inval' } : trocar(t, marca, novo);
       });
     }
-    st[r] = novo;
+    if (!this.locais.has(r)) st[r] = novo;
     return linha;
   }
 
@@ -374,7 +453,7 @@ class Tradutor {
       this.escritos(senao[0], senao[1]).forEach(r => mudaram.add(r));
     }
     out.push(`${ind}}`);
-    mudaram.forEach(r => st[r] = { k: 'inval' });
+    mudaram.forEach(r => st[r] = this.aposMudanca(r));
     this.invalidarLeituras(st, this.gravadas(i + 2, fim));
     return fim;
   }
@@ -408,8 +487,22 @@ class Tradutor {
       && !this.escritos(corpoIni, corpoFim - 1).has(r)
       && (cb.t === 'num' || (cb.t === 'reg' && !mudam.has(cb.r)));
 
+    // registradores que levam valor de uma volta para a outra viram variável local
+    // (o contador do for já vira a variável i)
+    const vivos = this.vivos(corpoIni, ehFor ? corpoFim - 1 : corpoFim);
+    if (!ehFor) { vivos.add(r); if (cb.t === 'reg') vivos.add(cb.r); }
+    const novos: Registrador[] = [];
+    REGISTRADORES.forEach(k => {
+      if (!mudam.has(k) || !vivos.has(k) || (ehFor && k === r) || this.locais.has(k)) return;
+      const nome = this.novoLocal();
+      out.push(`${ind}int ${nome} = ${mostrar(valido(st[k]))};`);
+      this.locais.set(k, nome);
+      st[k] = { k: 'var', n: nome };
+      novos.push(k);
+    });
+
     const stCorpo = { ...st };
-    mudam.forEach(k => { if (k !== r) stCorpo[k] = { k: 'inval' }; });
+    mudam.forEach(k => { if (k !== r && !this.locais.has(k)) stCorpo[k] = { k: 'inval' }; });
     const gravadas = this.gravadas(corpoIni, corpoFim);
     this.invalidarLeituras(stCorpo, gravadas);
     let cabecalho: string;
@@ -424,15 +517,17 @@ class Tradutor {
       stCorpo[r] = { k: 'var', n: nome };
       linhas = this.bloco(corpoIni, corpoFim - 1, stCorpo, nivel + 1);
     } else {
-      if (mudam.has(r)) throw new NaoEstruturado();
+      if (mudam.has(r) && !this.locais.has(r)) throw new NaoEstruturado();
       cabecalho = `while (${this.condicao(cmp, jcc, st)}) {`;
       linhas = this.bloco(corpoIni, corpoFim, stCorpo, nivel + 1);
     }
     this.fecharTexto(linhas, nivel + 1);
     out.push(ind + cabecalho, ...linhas, `${ind}}`);
-    mudam.forEach(k => st[k] = { k: 'inval' });
-    st[r] = { k: 'inval' };
+    mudam.forEach(k => st[k] = this.aposMudanca(k));
+    if (ehFor) st[r] = { k: 'inval' };
     this.invalidarLeituras(st, gravadas);
+    // depois do laço, o registrador vale a variável local; ela não precisa mais receber cada mudança
+    novos.forEach(k => this.locais.delete(k));
     return l.fim;
   }
 }
