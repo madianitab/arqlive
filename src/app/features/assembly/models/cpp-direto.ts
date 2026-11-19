@@ -4,9 +4,10 @@
  * É uma tradução didática, instrução por instrução: os registradores viram variáveis,
  * os desvios viram if/goto e as portas viram digitalRead/digitalWrite/analogRead.
  * Se o programa usa portas ou DELAY, sai no formato do Arduino; senão, no formato de PC.
+ * Registradores que são contadores de laço viram i, j, k… (veja contadoresDeLaco).
  */
 import { Operando, Programa, textoOperando } from './assembly';
-import { REGISTRADORES } from './instrucoes';
+import { REGISTRADORES, Registrador } from './instrucoes';
 
 const COMPARA: Record<string, string> = { JE: '==', JNE: '!=', JG: '>', JGE: '>=', JL: '<', JLE: '<=' };
 
@@ -16,10 +17,66 @@ export function ehArduino(p: Programa): boolean {
     (i.def.op === 'OUT' && !(i.operandos[0].t === 'porta' && i.operandos[0].nome === 'TELA')));
 }
 
+const NOMES_CONTADORES = ['i', 'j', 'k', 'm', 'n'];
+
+/**
+ * Registradores usados como contador de laço, com o nome que recebem no C++ (i, j, k…),
+ * na ordem em que aparecem. Contador: registrador comparado no teste do laço e
+ * alterado no corpo por ADD/SUB com constante. Dois formatos de laço:
+ *   ROTULO: CMP R, x / Jcc FIM / … ADD R, 1 … / JMP ROTULO / FIM:    (teste no início)
+ *   ROTULO: … ADD R, 1 … / CMP R, x / Jcc ROTULO                    (teste no fim)
+ * Nomes já usados por variáveis ou rótulos (sem diferenciar maiúsculas) são pulados.
+ */
+export function contadoresDeLaco(p: Programa): Map<Registrador, string> {
+  const ins = p.instrucoes;
+  const rotulos = new Set(p.rotulos.map(r => r.end));
+  const alvo = (k: number) => {
+    const a = ins[k]?.operandos[0];
+    return a && a.t === 'rotulo' && !a.sistema ? a.end : -1;
+  };
+  /** O corpo [s, e) muda o registrador com ADD/SUB de constante? */
+  const contaNoCorpo = (r: Registrador, s: number, e: number) => ins.slice(s, e).some(it =>
+    (it.def.op === 'ADD' || it.def.op === 'SUB') && it.operandos[0].t === 'reg' && it.operandos[0].r === r && it.operandos[1].t === 'num');
+  const regCmp = (k: number) => {
+    const a = ins[k]?.operandos[0];
+    return ins[k]?.def.op === 'CMP' && a?.t === 'reg' ? a.r : null;
+  };
+
+  const achados: Registrador[] = [];
+  const achar = (r: Registrador | null) => { if (r && !achados.includes(r)) achados.push(r); };
+  ins.forEach((it, k) => {
+    // teste no início
+    const r = regCmp(k);
+    if (r && rotulos.has(k) && COMPARA[ins[k + 1]?.def.op]) {
+      const fim = alvo(k + 1);
+      if (fim > k + 2 && ins[fim - 1].def.op === 'JMP' && alvo(fim - 1) === k && contaNoCorpo(r, k + 2, fim - 1)) achar(r);
+    }
+    // teste no fim
+    if (COMPARA[it.def.op]) {
+      const ini = alvo(k);
+      const rc = regCmp(k - 1);
+      if (rc && ini >= 0 && ini < k - 1 && contaNoCorpo(rc, ini, k - 1)) achar(rc);
+    }
+  });
+
+  const ocupados = new Set([...p.variaveis.map(v => v.nome), ...p.rotulos.map(r => r.nome)].map(n => n.toLowerCase()));
+  const livres = NOMES_CONTADORES.filter(n => !ocupados.has(n));
+  const mapa = new Map<Registrador, string>();
+  achados.forEach(r => { const n = livres.shift(); if (n) mapa.set(r, n); });
+  return mapa;
+}
+
 export function gerarCppDireto(p: Programa): string {
   if (p.erros.length) return '';
   const arduino = ehArduino(p);
   const ins = p.instrucoes;
+  const contadores = contadoresDeLaco(p);
+  /** Texto do operando no C++ (registrador contador vira i, j…). */
+  const txt = (o: Operando): string => {
+    if (o.t === 'reg') return contadores.get(o.r) ?? o.r;
+    if (o.t === 'mem' && o.indice?.t === 'reg') return `${o.nome}[${contadores.get(o.indice.r) ?? o.indice.r}]`;
+    return textoOperando(o);
+  };
 
   // registradores usados
   const regs = new Set<string>();
@@ -56,8 +113,8 @@ export function gerarCppDireto(p: Programa): string {
   ins.forEach((i, k) => {
     (rotulosEm.get(k) ?? []).forEach(r => corpo.push([`${r}:`, '']));
     const [a, b] = i.operandos;
-    const A = a ? textoOperando(a) : '';
-    const B = b ? textoOperando(b) : '';
+    const A = a ? txt(a) : '';
+    const B = b ? txt(b) : '';
     let c = '';
     switch (i.def.op) {
       case 'LOAD': case 'MOV': c = `${A} = ${B};`; break;
@@ -109,7 +166,10 @@ export function gerarCppDireto(p: Programa): string {
   out.push(arduino ? 'void setup() {' : 'int main() {');
   if (arduino && usaTela) out.push('  Serial.begin(9600);');
   if (arduino && ins.some(i => i.def.op === 'OUT' && i.operandos[0].t === 'porta' && i.operandos[0].nome === 'LED')) out.push('  pinMode(LED_BUILTIN, OUTPUT);');
-  if (usados.length) out.push(`  int ${usados.map(r => `${r} = 0`).join(', ')};   // registradores`);
+  const comuns = usados.filter(r => !contadores.has(r));
+  const cont = [...contadores.keys()].filter(r => regs.has(r));
+  if (comuns.length) out.push(`  int ${comuns.map(r => `${r} = 0`).join(', ')};   // registradores`);
+  if (cont.length) out.push(`  int ${cont.map(r => `${contadores.get(r)} = 0`).join(', ')};   // contadores dos laços (${cont.join(', ')})`);
   out.push(...linhas);
   if (!arduino && !ins.some(i => i.def.op === 'HALT')) out.push('  return 0;');
   out.push('}');

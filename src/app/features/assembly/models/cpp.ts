@@ -126,7 +126,8 @@ class Tradutor {
   private readonly rotuloEm = new Map<number, string>();
   private readonly texto: string | null;
   private textoPendente: string | null = null;
-  private contadores = ['i', 'j', 'k'];
+  /** Nomes dos contadores dos for (os já usados por variáveis são tirados no construtor). */
+  private contadores = ['i', 'j', 'k', 'm', 'n'];
   private usaLed = false;
   private usaBotao = false;
   private usaTela = false;
@@ -142,7 +143,8 @@ class Tradutor {
     const t = p.variaveis.find(v => v.nome.toUpperCase() === VARIAVEL_TEXTO);
     this.texto = t && typeof t.valores[0] === 'string' ? t.valores[0] : null;
     p.variaveis.forEach(v => this.nomesUsados.add(v.nome.toLowerCase()));
-    ['i', 'j', 'k', 'p', 'led', 'botao'].forEach(n => this.nomesUsados.add(n));
+    this.contadores = this.contadores.filter(n => !this.nomesUsados.has(n));
+    ['i', 'j', 'k', 'm', 'n', 'p', 'led', 'botao'].forEach(n => this.nomesUsados.add(n));
   }
 
   gerar(): string {

@@ -118,6 +118,83 @@ HALT`);
     expect(linhas(r.codigo)).toEqual(jasmine.arrayContaining(['int valor = 5;', 'while (valor != 0) {', 'printf("%d", valor);', 'valor--;']));
   });
 
+  it('tradução direta: registradores contadores de laço viram i, j…', () => {
+    // dois laços com R3 (o segundo não reinicia R3) → estrutura não reconhecida
+    const r = cpp(`X: 0
+LOAD R1, 0
+LOAD R2, 1
+LOAD R4, 1
+LOOP:
+  CMP R1, 3
+  JE FIM
+  MUL R2, 2
+  ADD R1, 1
+  JMP LOOP
+FIM:
+LOOP1:
+  CMP R3, 2
+  JE FIM1
+  MUL R4, 3
+  ADD R3, 1
+  JMP LOOP1
+FIM1:
+LOOP2:
+  CMP R3, 2
+  JE FIM2
+  MUL R4, 3
+  ADD R3, 1
+  JMP LOOP2
+FIM2:
+ADD R2, R4
+STORE X, R2
+OUT TELA, R2
+HALT`);
+    expect(r.nivel).toBe('direto');
+    const l = linhas(r.codigo);
+    expect(l).toContain('int R2 = 0, R4 = 0;   // registradores');
+    expect(l).toContain('int i = 0, j = 0;   // contadores dos laços (R1, R3)');
+    expect(l.some(x => x.startsWith('i = 0;') && x.endsWith('// LOAD R1, 0'))).toBeTrue();
+    expect(l.some(x => x.startsWith('if (i == 3) goto FIM;'))).toBeTrue();
+    expect(l.some(x => x.startsWith('i = i + 1;') && x.endsWith('// ADD R1, 1'))).toBeTrue();
+    expect(l.some(x => x.startsWith('if (j == 2) goto FIM2;'))).toBeTrue();
+    expect(l.some(x => x.startsWith('R4 = R4 * 3;'))).toBeTrue();
+    // R1 e R3 só aparecem nos comentários
+    expect(l.map(x => x.split('//')[0]).some(x => /\bR[13]\b/.test(x))).toBeFalse();
+  });
+
+  it('tradução direta: contador com teste no fim, índice de vetor e nome já usado', () => {
+    const r = cpp(`V: 1, 2, 3
+i: 0
+INICIO:
+  LOAD R2, V[R1]
+  OUT TELA, R2
+  ADD R1, 1
+  CMP R1, 3
+  JL INICIO
+L: OUT TELA, R1
+JMP L`);
+    expect(r.nivel).toBe('direto');
+    const l = linhas(r.codigo);
+    expect(l).toContain('int j = 0;   // contadores dos laços (R1)');
+    expect(l.some(x => x.startsWith('R2 = V[j];'))).toBeTrue();
+    expect(l.some(x => x.startsWith('if (j < 3) goto INICIO;'))).toBeTrue();
+  });
+
+  it('for legível não usa nome de variável já existente', () => {
+    const r = cpp(`i: 5
+LOAD R1, 0
+LOOP:
+  CMP R1, 2
+  JE FIM
+  OUT TELA, R1
+  ADD R1, 1
+  JMP LOOP
+FIM:
+HALT`);
+    expect(r.nivel).toBe('alto');
+    expect(linhas(r.codigo)).toContain('for (int j = 0; j < 2; j++) {');
+  });
+
   it('todos os exemplos saem legíveis', () => {
     EXEMPLOS_ASSEMBLY.forEach(e => expect(cpp(e.codigo).nivel).withContext(e.id).toBe('alto'));
   });
