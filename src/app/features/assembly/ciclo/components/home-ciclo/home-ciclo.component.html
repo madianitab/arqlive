@@ -1,0 +1,17 @@
+<os-sim-shell
+  title="Ciclo de instrução"
+  subtitle="Busca, decodificação e execução: acompanhe cada instrução passando pela CPU."
+>
+  <ng-container slot="actions">
+    <os-button-group>
+      <button class="osbg-btn" type="button" aria-label="Voltar ao início" title="Voltar ao início" (click)="sim.reiniciar()">
+        <i class="fa-solid fa-backward-step"></i> Início
+      </button>
+      <button class="osbg-btn primary" type="button" aria-label="Ir para a próxima instrução" title="Próxima instrução (↓)" (click)="sim.proximaInstrucao()">
+        <i class="fa-solid fa-forward-step"></i> Próxima instrução
+      </button>
+    </os-button-group>
+  </ng-container>
+  <app-lateral-ciclo slot="config"></app-lateral-ciclo>
+  <app-area-ciclo></app-area-ciclo>
+</os-sim-shell>

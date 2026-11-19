@@ -6,6 +6,7 @@ import { BrandkitComponent } from './pages/brandkit/brandkit.component';
 import { ExecutorAssemblyComponent } from './features/assembly/executor/components/executor-assembly/executor-assembly.component';
 import { ExerciciosAssemblyComponent } from './features/assembly/exercicios/components/exercicios-assembly/exercicios-assembly.component';
 import { TradutorCComponent } from './features/assembly/tradutor/components/tradutor-c/tradutor-c.component';
+import { HomeCicloComponent } from './features/assembly/ciclo/components/home-ciclo/home-ciclo.component';
 import { HomeAssemblyComponent } from './features/assembly/simulador/components/home-assembly/home-assembly.component';
 
 const routes: Routes = [
@@ -15,6 +16,7 @@ const routes: Routes = [
 
   // Assembly
   { path: 'assembly/simulador', component: HomeAssemblyComponent },
+  { path: 'assembly/ciclo', component: HomeCicloComponent },
   { path: 'assembly/executor', component: ExecutorAssemblyComponent },
   { path: 'assembly/tradutor', component: TradutorCComponent },
   { path: 'assembly/exercicios', component: ExerciciosAssemblyComponent },

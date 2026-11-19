@@ -1,0 +1,98 @@
+/* cor de cada fase: busca (info), decodificação (warn), execução (a) */
+[data-fase="busca"], [data-f="busca"] { --fc: var(--info); --fs: var(--info-soft); --fd: var(--info-deep); }
+[data-fase="decodificacao"], [data-f="decodificacao"] { --fc: var(--warn); --fs: var(--warn-soft); --fd: var(--warn-deep); }
+[data-fase="execucao"], [data-f="execucao"] { --fc: var(--a); --fs: var(--a-soft); --fd: var(--a-deep); }
+[data-fase="carga"], [data-fase="fim"] { --fc: var(--ok); --fs: var(--ok-soft); --fd: var(--ok-deep); }
+[data-fase="erro"] { --fc: var(--err); --fs: var(--err-soft); --fd: var(--err-deep); }
+
+.viz { display: flex; flex-direction: column; gap: 18px; }
+
+/* ───────── faixa do ciclo ───────── */
+.ciclo { display: flex; flex-direction: column; gap: 10px; }
+.instr { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.instr-num { font-family: var(--f-mono); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); }
+.instr-ir { font-family: var(--f-mono); font-size: 20px; font-weight: 700; color: var(--text); }
+
+.fases { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr auto 1fr auto 1.2fr; align-items: stretch; gap: 8px; }
+.entre { display: flex; align-items: center; color: var(--text-3); font-size: 14px; }
+.fase {
+  border: 1.5px solid var(--line); border-radius: var(--r-md); background: var(--surface);
+  padding: 8px 12px; opacity: .55; transition: opacity .25s, border-color .25s, background .25s, box-shadow .25s;
+}
+.fase.ativa { opacity: 1; border-color: var(--fc); background: var(--fs); box-shadow: 0 0 0 3px color-mix(in srgb, var(--fc) 18%, transparent); }
+.f-topo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 6px; }
+.fase.ativa .f-topo { color: var(--fd); }
+.f-num {
+  width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--f-mono); font-size: 12px; background: var(--surface-2); border: 1px solid var(--line); color: var(--text-2);
+}
+.fase.ativa .f-num { background: var(--fc); border-color: var(--fc); color: #fff; }
+.f-micro { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.f-micro li { font-family: var(--f-mono); font-size: 13px; color: var(--text-3); padding: 2px 6px; border-radius: var(--r-xs); }
+.f-micro li[data-e="feita"] { color: var(--text-2); }
+.f-micro li[data-e="feita"]::before { content: "✓ "; color: var(--ok); }
+.f-micro li[data-e="atual"] { color: #fff; background: var(--fc); font-weight: 700; }
+
+.volta { margin-left: auto; font-size: 12.5px; color: var(--text-3); transition: color .25s; }
+.volta.ativa { color: var(--info-deep); font-weight: 600; }
+
+.detalhe {
+  margin: 0; padding: 10px 14px; border-left: 4px solid var(--fc); background: var(--surface-2);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline;
+}
+.detalhe b { font-family: var(--f-mono); font-size: 17px; color: var(--fd); }
+.detalhe span { color: var(--text-2); font-size: 14px; }
+
+/* ───────── diagrama ───────── */
+.diagrama { display: flex; flex-direction: column; gap: 8px; }
+.diag { width: 100%; max-width: 880px; height: auto; display: block; margin: 0 auto; font-family: var(--f-mono); }
+.moldura { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.titulo { font-size: 12px; font-weight: 700; letter-spacing: .14em; fill: var(--text-3); }
+.liga { fill: none; stroke: var(--line); stroke-width: 2; }
+
+.caixa rect { fill: var(--surface-2); stroke: var(--line); stroke-width: 1.5; transition: fill .25s, stroke .25s; }
+.caixa .nome { font-size: 11px; font-weight: 700; letter-spacing: .08em; fill: var(--text-3); }
+.caixa .val { font-size: 17px; font-weight: 700; fill: var(--text); text-anchor: middle; }
+.caixa .val.pequeno { font-size: 14px; font-weight: 600; }
+.caixa .val.flags { font-size: 15px; white-space: pre; }
+.caixa .val.vazio { fill: var(--text-3); font-weight: 400; font-size: 14px; }
+.caixa.reg .val { text-anchor: middle; }
+.caixa.ativo rect { fill: var(--fs); stroke: var(--fc); stroke-width: 2.5; }
+.caixa.ativo .nome { fill: var(--fd); }
+.caixa.mudou .val { fill: var(--fd); }
+
+.mem rect { fill: transparent; stroke: transparent; }
+.mem .m-end { font-size: 12px; fill: var(--text-3); text-anchor: end; }
+.mem .m-val { font-size: 13px; fill: var(--text); }
+.mem[data-tipo="dado"] .m-val { font-weight: 700; }
+.mem .m-nome { font-size: 12px; fill: var(--text-3); text-anchor: end; font-style: italic; }
+.mem .m-pc { font-size: 14px; fill: var(--info); font-weight: 700; }
+.mem.atual rect { fill: var(--surface-2); stroke: var(--line); }
+.mem[data-acesso="leitura"] rect { fill: var(--info-soft); stroke: var(--info); stroke-width: 2; }
+.mem[data-acesso="escrita"] rect { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 2; }
+.mem.mudou .m-val { fill: var(--warn-deep); }
+
+.seta { fill: none; stroke: var(--fc); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 9 6; animation: fluxo 0.9s linear infinite; }
+.seta-ponta { fill: var(--fc); }
+@keyframes fluxo { to { stroke-dashoffset: -15; } }
+@media (prefers-reduced-motion: reduce) { .seta { animation: none; stroke-dasharray: none; } }
+
+.legenda { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; font-size: 12px; color: var(--text-3); }
+.legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.lg { display: inline-block; width: 14px; height: 12px; border-radius: 3px; border: 1px solid var(--line); font-style: normal; }
+.lg.pc { border: none; color: var(--info); font-weight: 700; width: auto; line-height: 12px; }
+.lg.atual { background: var(--surface-2); }
+.lg.leitura { background: var(--info-soft); border-color: var(--info); }
+.lg.escrita { background: var(--warn-soft); border-color: var(--warn); }
+
+/* projetor e zoom: fases em coluna quando a área fica estreita */
+@container sim-main (max-width: 720px) {
+  .fases { grid-template-columns: 1fr; }
+  .entre { justify-content: center; transform: rotate(90deg); }
+  .volta { margin-left: 0; }
+  .instr-ir { font-size: 17px; }
+}
+
+/* tema escuro: as cores de fase são claras, então o texto sobre elas fica escuro */
+:host-context([data-theme="dark"]) .f-micro li[data-e="atual"],
+:host-context([data-theme="dark"]) .fase.ativa .f-num { color: var(--bg); }
