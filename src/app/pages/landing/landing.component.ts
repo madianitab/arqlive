@@ -98,7 +98,7 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
               </os-card>
             </a>
             <a class="deck-link" href="#/assembly/executor" (click)="go('/assembly/executor'); $event.preventDefault()">
-              <os-card title="Executor de código">
+              <os-card title="Executor Assembly">
                 <os-card-icon slot="icon" variant="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5l12 7-12 7z"/></svg></os-card-icon>
                 Escreva o código, clique em Executar e veja o resultado e o equivalente em C++.
               </os-card>
