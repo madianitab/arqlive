@@ -20,6 +20,41 @@ export type FaseCiclo = 'carga' | 'busca' | 'decodificacao' | 'execucao' | 'fim'
 /** Partes da CPU (e a memória) que aparecem no diagrama. */
 export type Componente = 'PC' | 'IR' | 'MAR' | 'MDR' | 'UC' | 'ULA' | 'FLAGS' | 'MEM' | Registrador;
 
+/**
+ * Caixa do fluxograma do ciclo de instrução:
+ * buscar → incrementar → decodificar → tem operando? (sim: endereço → buscar operando → volta) → executar → escrever → buscar…
+ */
+export type EtapaFluxo =
+  | 'buscar' | 'incrementar' | 'decodificar' | 'decisao'
+  | 'endereco' | 'buscarOperando' | 'executar' | 'escrever'
+  | 'carga' | 'fim';
+
+/** Ligações do fluxograma (de → para). */
+export const LIGACOES_FLUXO: [EtapaFluxo, EtapaFluxo][] = [
+  ['buscar', 'incrementar'], ['incrementar', 'decodificar'], ['decodificar', 'decisao'],
+  ['decisao', 'endereco'], ['endereco', 'buscarOperando'], ['buscarOperando', 'decisao'],
+  ['decisao', 'executar'], ['executar', 'escrever'], ['escrever', 'buscar'],
+];
+
+/** Caminho mais curto no fluxograma entre duas caixas (lista de ligações "de>para"). */
+export function caminhoFluxo(de: EtapaFluxo, para: EtapaFluxo): string[] {
+  if (de === para) return [];
+  const anterior = new Map<EtapaFluxo, EtapaFluxo>();
+  const fila: EtapaFluxo[] = [de];
+  const vistos = new Set<EtapaFluxo>([de]);
+  while (fila.length) {
+    const x = fila.shift()!;
+    if (x === para) break;
+    for (const [a, b] of LIGACOES_FLUXO) {
+      if (a === x && !vistos.has(b)) { vistos.add(b); anterior.set(b, x); fila.push(b); }
+    }
+  }
+  if (!vistos.has(para)) return [];
+  const res: string[] = [];
+  for (let x = para; x !== de; x = anterior.get(x)!) res.unshift(`${anterior.get(x)}>${x}`);
+  return res;
+}
+
 /** Caminho do dado numa micro-operação (seta no diagrama). */
 export interface Fluxo { de: Componente; para: Componente; }
 
@@ -40,6 +75,8 @@ export interface EstadoCpu {
 
 export interface MicroOp {
   fase: FaseCiclo;
+  /** Caixa do fluxograma em que a micro-operação acontece. */
+  etapa: EtapaFluxo;
   /** Número da instrução executada (1, 2, 3…); 0 na carga. */
   ciclo: number;
   /** Endereço e linha da instrução em andamento. */
@@ -107,6 +144,7 @@ function aplicar(e: EstadoCpu, chaves: string[], p: Passo, ini: number): EstadoC
 // ─────────────────────────── micro-operações da execução ───────────────────────────
 
 interface Parcial {
+  etapa?: EtapaFluxo;
   texto: string;
   detalhe: string;
   ativos: Componente[];
@@ -213,6 +251,28 @@ function microsExecucao(p: Passo): Parcial[] {
   return res;
 }
 
+/** Caixa do fluxograma de cada micro-operação da execução. */
+function etapaExecucao(x: Parcial, op: string): EtapaFluxo {
+  const t = x.texto;
+  if (op === 'LOAD' && /^MAR ← endereço/.test(t)) return 'endereco';
+  if (op === 'LOAD' && (t === 'MDR ← M[MAR]' || /^R[0-7] ← MDR$/.test(t))) return 'buscarOperando';
+  if (/resultado da ULA$/.test(t) || /^PC ← /.test(t) || t === 'M[MAR] ← MDR' || /^R[0-7] ← (R[0-7]|-?\d+)$/.test(t)) return 'escrever';
+  return 'executar';
+}
+
+/** O operando da instrução precisa ser buscado na memória? (só o LOAD de variável) */
+function decisaoOperando(p: Passo, op: string): { sim: boolean; detalhe: string } {
+  const mem = p.micro.some(l => /^MDR ← M\[/.test(l));
+  if (op === 'LOAD' && mem) return { sim: true, detalhe: 'Sim: o LOAD precisa ler o valor da memória.' };
+  const motivo = op === 'LOAD' ? 'a constante vem na própria instrução.'
+    : op === 'STORE' ? 'o dado já está no registrador; a memória só é escrita no fim.'
+    : op === 'MOV' ? 'a cópia é entre registradores.'
+    : ['ADD', 'SUB', 'MUL', 'DIV', 'CMP'].includes(op) ? 'a ULA trabalha com registradores e constantes.'
+    : /^J/.test(op) ? 'o endereço do desvio vem na própria instrução.'
+    : 'nada a buscar na memória.';
+  return { sim: false, detalhe: `Não: ${motivo}` };
+}
+
 // ─────────────────────────── geração ───────────────────────────
 
 /** Gera as micro-operações de uma execução. */
@@ -224,7 +284,7 @@ export function gerarMicros(exec: Execucao): CicloCpu {
 
   let est = estadoDe(passos[0]);
   micros.push({
-    fase: 'carga', ciclo: 0, end: null, linha: null, instrucao: '',
+    fase: 'carga', etapa: 'carga', ciclo: 0, end: null, linha: null, instrucao: '',
     texto: 'Programa carregado na memória',
     detalhe: `Instruções a partir do endereço 0${programa.variaveis.length ? `, variáveis a partir do ${ini}` : ''}. PC ← 0.`,
     ativos: ['PC', 'MEM'], fluxos: [], memoria: null, estado: copiar(est), mudou: [],
@@ -233,46 +293,53 @@ export function gerarMicros(exec: Execucao): CicloCpu {
   for (let i = 1; i < passos.length; i++) {
     const p = passos[i];
     const base = { ciclo: p.ciclo, end: p.end, linha: p.linha, instrucao: p.end !== null ? p.ir : '' };
-    const add = (fase: FaseCiclo, x: Parcial) => {
+    const add = (fase: FaseCiclo, etapa: EtapaFluxo, x: Parcial) => {
       est = aplicar(est, x.grava, p, ini);
-      micros.push({ ...base, fase, texto: x.texto, detalhe: x.detalhe, ativos: x.ativos, fluxos: x.fluxos,
+      micros.push({ ...base, fase, etapa, texto: x.texto, detalhe: x.detalhe, ativos: x.ativos, fluxos: x.fluxos,
         memoria: x.memoria, estado: copiar(est), mudou: [...x.grava] });
     };
 
     if (p.fase === 'busca') {
       const end = p.end!;
       est.ula = null;   // a conta da ULA vale só para a instrução anterior
-      add('busca', { texto: 'MAR ← PC', detalhe: `O endereço da instrução (${end}) vai para o MAR.`,
+      add('busca', 'buscar', { texto: 'MAR ← PC', detalhe: `O endereço da instrução (${end}) vai para o MAR.`,
         ativos: ['PC', 'MAR'], fluxos: [{ de: 'PC', para: 'MAR' }], memoria: null, grava: ['MAR'] });
-      add('busca', { texto: 'MDR ← M[MAR]', detalhe: `A memória devolve o conteúdo do endereço ${end}: ${p.ir}.`,
+      add('busca', 'buscar', { texto: 'MDR ← M[MAR]', detalhe: `A memória devolve o conteúdo do endereço ${end}: ${p.ir}.`,
         ativos: ['MAR', 'MEM', 'MDR'], fluxos: [{ de: 'MAR', para: 'MEM' }, { de: 'MEM', para: 'MDR' }],
         memoria: { end, tipo: 'leitura' }, grava: ['MDR'] });
-      add('busca', { texto: 'IR ← MDR', detalhe: `A instrução ${p.ir} vai para o IR.`,
+      add('busca', 'buscar', { texto: 'IR ← MDR', detalhe: `A instrução ${p.ir} vai para o IR.`,
         ativos: ['MDR', 'IR'], fluxos: [{ de: 'MDR', para: 'IR' }], memoria: null, grava: ['IR'] });
-      add('busca', { texto: 'PC ← PC + 1', detalhe: `O PC passa a apontar para a próxima instrução (${p.pc}).`,
+      add('busca', 'incrementar', { texto: 'PC ← PC + 1', detalhe: `O PC passa a apontar para a próxima instrução (${p.pc}).`,
         ativos: ['PC'], fluxos: [], memoria: null, grava: ['PC'] });
     } else if (p.fase === 'decodificacao') {
       const [uc, ...resto] = p.micro;
-      add('decodificacao', { texto: 'UC decodifica o IR', detalhe: [uc.replace(/^UC: /, ''), ...resto].join(' · '),
+      add('decodificacao', 'decodificar', { texto: 'UC decodifica o IR', detalhe: [uc.replace(/^UC: /, ''), ...resto].join(' · '),
         ativos: ['IR', 'UC'], fluxos: [{ de: 'IR', para: 'UC' }], memoria: null, grava: [] });
     } else if (p.end !== null && (p.fase === 'execucao' || p.fase === 'fim' || p.fase === 'erro')) {
       const parciais = microsExecucao(p);
       // no erro, a última linha é a mensagem: vira a micro-operação de erro
       const msgErro = p.fase === 'erro' ? parciais.pop() : undefined;
-      parciais.forEach(x => add('execucao', x));
+      const op = p.ir.split(' ')[0];
+      const dec = decisaoOperando(p, op);
+      const decisao = (detalhe: string): Parcial => ({ texto: 'Tem operando?', detalhe,
+        ativos: ['IR', 'UC'], fluxos: [], memoria: null, grava: [] });
+      add('execucao', 'decisao', decisao(dec.detalhe));
+      parciais.forEach(x => add('execucao', etapaExecucao(x, op), x));
+      // depois de buscar o operando, o fluxo volta à pergunta (agora não há mais operando)
+      if (dec.sim && !msgErro) add('execucao', 'decisao', decisao('Não: o operando já está no registrador e o LOAD termina aqui.'));
       est = estadoDe(p);   // garante o estado exato do fim da execução
       if (p.fase === 'fim') {
-        micros.push({ ...base, fase: 'fim', texto: 'Fim do programa', detalhe: 'O HALT encerrou a execução.',
+        micros.push({ ...base, fase: 'fim', etapa: 'fim', texto: 'Fim do programa', detalhe: 'O HALT encerrou a execução.',
           ativos: [], fluxos: [], memoria: null, estado: copiar(est), mudou: [] });
       }
       if (msgErro) {
-        micros.push({ ...base, fase: 'erro', texto: 'Erro na execução', detalhe: exec.erro?.msg ?? msgErro.texto,
+        micros.push({ ...base, fase: 'erro', etapa: 'fim', texto: 'Erro na execução', detalhe: exec.erro?.msg ?? msgErro.texto,
           ativos: ['UC'], fluxos: [], memoria: null, estado: copiar(est), mudou: [] });
       }
     } else {
       // fim (PC passou da última instrução) ou erro sem instrução (laço infinito)
       est = estadoDe(p);
-      micros.push({ ...base, fase: p.fase === 'erro' ? 'erro' : 'fim',
+      micros.push({ ...base, fase: p.fase === 'erro' ? 'erro' : 'fim', etapa: 'fim',
         texto: p.fase === 'erro' ? 'Execução interrompida' : 'Fim do programa',
         detalhe: p.micro.join(' '), ativos: [], fluxos: [], memoria: null, estado: copiar(est), mudou: [] });
     }

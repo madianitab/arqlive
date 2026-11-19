@@ -29,17 +29,6 @@ export class CicloCpuService {
   readonly atual = computed<MicroOp | null>(() => this.passos()[this.posicao()] ?? null);
   readonly terminou = computed(() => this.posicao() >= this.total() - 1);
 
-  /** Micro-operações da instrução em andamento, separadas por fase (para a faixa do ciclo). */
-  readonly fasesDaInstrucao = computed(() => {
-    const a = this.atual();
-    const todas = this.ciclo().micros.filter(m => a && a.ciclo > 0 && m.ciclo === a.ciclo);
-    return {
-      busca: todas.filter(m => m.fase === 'busca'),
-      decodificacao: todas.filter(m => m.fase === 'decodificacao'),
-      execucao: todas.filter(m => m.fase === 'execucao'),
-    };
-  });
-
   /** Posição, na lista de micro-operações, da última micro-operação já mostrada. */
   readonly indiceMicro = computed(() => {
     const a = this.atual();
@@ -50,14 +39,6 @@ export class CicloCpuService {
     micros.forEach((m, i) => { if (m.ciclo === a.ciclo && m.fase === a.fase) ult = i; });
     return ult;
   });
-
-  /** A micro-operação já foi mostrada (feita) ou é a atual? */
-  estadoMicro(m: MicroOp): 'feita' | 'atual' | 'futura' {
-    const i = this.ciclo().micros.indexOf(m);
-    const a = this.atual();
-    if (a && (this.modo() === 'micro' ? i === this.indiceMicro() : m.ciclo === a.ciclo && m.fase === a.fase)) return 'atual';
-    return i <= this.indiceMicro() ? 'feita' : 'futura';
-  }
 
   /** Registradores que já receberam valor até o passo atual (os outros aparecem vazios). */
   readonly regsComValor = computed(() => {

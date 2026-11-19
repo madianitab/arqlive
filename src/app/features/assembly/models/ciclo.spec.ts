@@ -1,4 +1,4 @@
-import { agruparPorFase, celulasMemoria, cicloDoCodigo, registradoresUsados } from './ciclo';
+import { agruparPorFase, caminhoFluxo, celulasMemoria, cicloDoCodigo, registradoresUsados } from './ciclo';
 import { EXEMPLOS_CICLO } from './exemplos-ciclo';
 
 const ex = (id: string) => EXEMPLOS_CICLO.find(e => e.id === id)!.codigo;
@@ -35,9 +35,9 @@ describe('Ciclo de instrução (micro-operações)', () => {
   it('LOAD, ADD e STORE: micro-operações da execução', () => {
     const c = cicloDoCodigo(ex('x-mais-2'));
     const exec = (ciclo: number) => c.micros.filter(m => m.ciclo === ciclo && m.fase === 'execucao').map(m => m.texto);
-    expect(exec(1)).toEqual(['MAR ← endereço de X', 'MDR ← M[MAR]', 'R1 ← MDR']);
-    expect(exec(2)).toEqual(['ULA: R1 + 2', 'R1 ← resultado da ULA', 'Flags ← resultado da ULA']);
-    expect(exec(3)).toEqual(['MAR ← endereço de X', 'MDR ← R1', 'M[MAR] ← MDR']);
+    expect(exec(1)).toEqual(['Tem operando?', 'MAR ← endereço de X', 'MDR ← M[MAR]', 'R1 ← MDR', 'Tem operando?']);
+    expect(exec(2)).toEqual(['Tem operando?', 'ULA: R1 + 2', 'R1 ← resultado da ULA', 'Flags ← resultado da ULA']);
+    expect(exec(3)).toEqual(['Tem operando?', 'MAR ← endereço de X', 'MDR ← R1', 'M[MAR] ← MDR']);
     const ula = c.micros.find(m => m.ciclo === 2 && m.texto === 'ULA: R1 + 2')!;
     expect(ula.detalhe).toBe('5 + 2 = 7');
     expect(ula.estado.regs.R1).toBe(5);   // o R1 só muda na micro-operação seguinte
@@ -45,6 +45,23 @@ describe('Ciclo de instrução (micro-operações)', () => {
     expect(grava.memoria).toEqual({ end: 4, tipo: 'escrita' });
     expect(grava.mudou).toEqual(['M4']);
     expect(valor(c, 'X')).toBe(7);
+  });
+
+  it('etapas do fluxograma: LOAD busca o operando; ADD e STORE não', () => {
+    const c = cicloDoCodigo(ex('x-mais-2'));
+    const etapas = (ciclo: number) => c.micros.filter(m => m.ciclo === ciclo).map(m => m.etapa);
+    expect(etapas(1)).toEqual(['buscar', 'buscar', 'buscar', 'incrementar', 'decodificar',
+      'decisao', 'endereco', 'buscarOperando', 'buscarOperando', 'decisao']);
+    expect(etapas(2).slice(5)).toEqual(['decisao', 'executar', 'escrever', 'escrever']);
+    expect(etapas(3).slice(5)).toEqual(['decisao', 'executar', 'executar', 'escrever']);
+    expect(c.micros.find(m => m.ciclo === 1 && m.etapa === 'decisao')!.detalhe).toMatch(/^Sim/);
+    expect(c.micros.find(m => m.ciclo === 2 && m.etapa === 'decisao')!.detalhe).toMatch(/^Não/);
+  });
+
+  it('caminho no fluxograma', () => {
+    expect(caminhoFluxo('buscarOperando', 'executar')).toEqual(['buscarOperando>decisao', 'decisao>executar']);
+    expect(caminhoFluxo('executar', 'buscar')).toEqual(['executar>escrever', 'escrever>buscar']);
+    expect(caminhoFluxo('decisao', 'decisao')).toEqual([]);
   });
 
   it('decodificação: a UC lê o IR', () => {

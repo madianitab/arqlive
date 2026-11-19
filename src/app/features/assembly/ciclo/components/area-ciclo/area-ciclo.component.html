@@ -1,136 +1,140 @@
 @if (sim.atual(); as a) {
 <div class="viz" [attr.data-fase]="a.fase">
 
-  <!-- FAIXA DO CICLO -->
-  <section class="ciclo" aria-label="Ciclo de instrução">
+  <!-- instrução atual, micro-operação e controles -->
+  <section class="topo">
     <div class="instr">
       @if (a.ciclo > 0) {
         <span class="instr-num">Instrução {{ a.ciclo }} de {{ sim.totalInstrucoes() }}</span>
         <code class="instr-ir">{{ a.instrucao }}</code>
+        <span class="chip-fase">{{ nomesFase[a.fase] }}</span>
       } @else {
         <span class="instr-num">Antes da primeira busca</span>
       }
-      <div class="volta" [class.ativa]="voltaAtiva()">
-        <i class="fa-solid fa-rotate-left"></i> depois da execução, volta para a busca (endereço no PC)
-      </div>
     </div>
-
-    <ol class="fases">
-      @for (f of ['busca', 'decodificacao', 'execucao']; track f; let i = $index) {
-        @if (i > 0) { <li class="entre" aria-hidden="true"><i class="fa-solid fa-arrow-right"></i></li> }
-        <li class="fase" [attr.data-f]="f" [class.ativa]="a.fase === f">
-          <div class="f-topo"><span class="f-num">{{ i + 1 }}</span>{{ nomesFase[f] }}</div>
-          <ul class="f-micro">
-            @for (m of $any(sim.fasesDaInstrucao())[f]; track $index) {
-              <li [attr.data-e]="sim.estadoMicro(m)">{{ m.texto }}</li>
-            } @empty {
-              <li data-e="futura">—</li>
-            }
-          </ul>
-        </li>
-      }
-    </ol>
-
-    <p class="detalhe" aria-live="polite" [attr.data-fase]="a.fase">
-      @if (sim.modo() === 'micro' || a.fase === 'carga' || a.fase === 'fim' || a.fase === 'erro') {
-        <b>{{ a.texto }}</b>@if (a.detalhe) { <span>{{ a.detalhe }}</span> }
-      } @else {
-        <b>{{ nomesFase[a.fase] }}</b><span>{{ resumoFase[a.fase] }}</span>
-      }
+    <p class="detalhe" aria-live="polite">
+      <b>{{ a.texto }}</b>@if (a.detalhe && sim.modo() === 'micro') { <span>{{ a.detalhe }}</span> }
     </p>
-
     <os-sim-player [total]="sim.total()" [atual]="sim.posicao()" [tocando]="sim.tocando()" [velocidade]="sim.velocidade()"
                    (play)="sim.tocar()" (pause)="sim.pausar()" (passo)="sim.avancar($event)" (seek)="sim.irPara($event)"
                    (velocidadeChange)="sim.velocidade.set($event)"></os-sim-player>
   </section>
 
-  <!-- DIAGRAMA: CPU + MEMÓRIA -->
-  <section class="diagrama">
-    <svg class="diag" [attr.viewBox]="'0 0 900 ' + altura()" [attr.data-fase]="a.fase" role="img"
-         [attr.aria-label]="'CPU e memória: ' + a.texto">
-      <defs>
-        <marker id="ciclo-seta" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-          <path d="M0 0 L10 5 L0 10 z" class="seta-ponta"></path>
-        </marker>
-      </defs>
-
-      <!-- CPU -->
-      <rect class="moldura" x="10" y="14" width="580" [attr.height]="altura() - 24" rx="14"></rect>
-      <text class="titulo" x="26" y="36">CPU</text>
-      <rect class="moldura" [attr.x]="memX" y="14" width="250" [attr.height]="altura() - 24" rx="14"></rect>
-      <text class="titulo" [attr.x]="memX + 14" y="36">Memória</text>
-
-      <!-- ligações fixas (barramentos) -->
-      <path class="liga" d="M160 77 H400"></path>
-      <path class="liga" d="M400 167 H260"></path>
-      <path class="liga" d="M145 194 V230"></path>
-      <path class="liga" d="M145 394 V414"></path>
-      <path class="liga" d="M570 72 H605"></path>
-      <path class="liga" d="M570 172 H620"></path>
-      <path class="liga" [attr.d]="'M605 72 V' + (altura() - 20)"></path>
-      <path class="liga" [attr.d]="'M620 172 V' + (altura() - 20)"></path>
-
-      <!-- caixas da UC, ULA e flags -->
-      @for (c of ['PC', 'MAR', 'IR', 'MDR']; track c) {
-        <g class="caixa" [class.ativo]="ativo($any(c))" [class.mudou]="mudou(c)">
-          <rect [attr.x]="$any(cx)[c].x" [attr.y]="$any(cx)[c].y" [attr.width]="$any(cx)[c].w" [attr.height]="$any(cx)[c].h" rx="8"></rect>
-          <text class="nome" [attr.x]="$any(cx)[c].x + 10" [attr.y]="$any(cx)[c].y + 17">{{ c }}</text>
-          <text class="val" [attr.x]="$any(cx)[c].x + $any(cx)[c].w / 2" [attr.y]="$any(cx)[c].y + 40">
-            {{ c === 'PC' ? a.estado.pc : c === 'MAR' ? valor(a.estado.mar) : c === 'IR' ? valor(a.estado.ir) : valor(a.estado.mdr) }}
-          </text>
-        </g>
-      }
-      <g class="caixa uc" [class.ativo]="ativo('UC')">
-        <rect [attr.x]="cx.UC.x" [attr.y]="cx.UC.y" [attr.width]="cx.UC.w" [attr.height]="cx.UC.h" rx="8"></rect>
-        <text class="nome" [attr.x]="cx.UC.x + 10" [attr.y]="cx.UC.y + 17">UNIDADE DE CONTROLE</text>
-        <text class="val pequeno" [attr.x]="cx.UC.x + cx.UC.w / 2" [attr.y]="cx.UC.y + 46">{{ textoUc(a) }}</text>
-      </g>
-      <g class="caixa" [class.ativo]="ativo('ULA')" [class.mudou]="mudou('ULA')">
-        <rect [attr.x]="cx.ULA.x" [attr.y]="cx.ULA.y" [attr.width]="cx.ULA.w" [attr.height]="cx.ULA.h" rx="8"></rect>
-        <text class="nome" [attr.x]="cx.ULA.x + 10" [attr.y]="cx.ULA.y + 17">ULA</text>
-        <text class="val" [attr.x]="cx.ULA.x + cx.ULA.w / 2" [attr.y]="cx.ULA.y + 46">{{ a.estado.ula ?? '—' }}</text>
-      </g>
-      <g class="caixa" [class.ativo]="ativo('FLAGS')" [class.mudou]="mudou('FLAGS')">
-        <rect [attr.x]="cx.FLAGS.x" [attr.y]="cx.FLAGS.y" [attr.width]="cx.FLAGS.w" [attr.height]="cx.FLAGS.h" rx="8"></rect>
-        <text class="nome" [attr.x]="cx.FLAGS.x + 10" [attr.y]="cx.FLAGS.y + 27">FLAGS</text>
-        <text class="val flags" [attr.x]="cx.FLAGS.x + 150" [attr.y]="cx.FLAGS.y + 28">Z {{ a.estado.z }}   N {{ a.estado.n }}   C {{ a.estado.c }}</text>
-      </g>
-
-      <!-- registradores de uso geral -->
-      @for (g of regs(); track g.r) {
-        <g class="caixa reg" [class.ativo]="ativo(g.r)" [class.mudou]="mudou(g.r)">
-          <rect x="400" [attr.y]="g.y" width="170" height="36" rx="8"></rect>
-          <text class="nome" x="412" [attr.y]="g.y + 23">{{ g.r }}</text>
-          <text class="val" x="500" [attr.y]="g.y + 24" [class.vazio]="valorReg(g.r) === 'vazio'">{{ valorReg(g.r) }}</text>
-        </g>
-      }
-
-      <!-- memória -->
-      @for (l of linhasMem(); track l.end) {
-        <g class="mem" [attr.data-tipo]="l.tipo"
-           [class.atual]="l.tipo === 'instrucao' && l.end === a.end && a.fase !== 'carga'"
-           [class.ativo]="a.memoria?.end === l.end" [attr.data-acesso]="a.memoria?.end === l.end ? a.memoria?.tipo : null"
-           [class.mudou]="mudou('M' + l.end)">
-          <rect [attr.x]="memX + 8" [attr.y]="l.y" width="234" height="26" rx="5"></rect>
-          @if (l.tipo === 'instrucao' && l.end === a.estado.pc && a.fase !== 'fim' && a.fase !== 'erro') {
-            <text class="m-pc" [attr.x]="memX + 14" [attr.y]="l.y + 18">▸</text>
+  <section class="paineis">
+    <!-- FLUXOGRAMA DO CICLO -->
+    <div class="painel">
+      <div class="viz-label">Ciclo de instrução</div>
+      <svg class="fluxo" viewBox="0 0 520 476" role="img" [attr.aria-label]="'Fluxograma do ciclo de instrução. Etapa atual: ' + a.texto">
+        <defs>
+          <marker id="fx-seta" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="fx-ponta"></path>
+          </marker>
+          @for (f of ['busca', 'decodificacao', 'execucao']; track f) {
+            <marker [attr.id]="'fx-seta-' + f" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" class="fx-ponta-cor" [attr.data-f]="f"></path>
+            </marker>
           }
-          <text class="m-end" [attr.x]="memX + 40" [attr.y]="l.y + 18">{{ l.end }}</text>
-          <text class="m-val" [attr.x]="memX + 50" [attr.y]="l.y + 18">{{ valorMem(l.end) }}</text>
-          <text class="m-nome" [attr.x]="memX + 236" [attr.y]="l.y + 18">{{ l.nome }}</text>
-        </g>
-      }
+        </defs>
 
-      <!-- setas da micro-operação atual -->
-      @for (d of setas(); track $index) {
-        <path class="seta" [attr.d]="d" marker-end="url(#ciclo-seta)"></path>
-      }
-    </svg>
-    <div class="legenda">
-      <span><i class="lg pc">▸</i>PC (próxima instrução)</span>
-      <span><i class="lg atual"></i>instrução em andamento</span>
-      <span><i class="lg leitura"></i>leitura</span>
-      <span><i class="lg escrita"></i>escrita</span>
+        <!-- chaves das fases -->
+        @for (g of grupos; track g.nome) {
+          <g class="grupo" [attr.data-f]="g.fase" [class.ativo]="a.fase === g.fase">
+            <path [attr.d]="'M104 ' + g.y1 + ' H98 V' + g.y2 + ' H104'"></path>
+            <text x="92" [attr.y]="(g.y1 + g.y2) / 2 + 4">{{ g.nome }}</text>
+          </g>
+        }
+
+        <!-- ligações -->
+        @for (l of ligacoes; track l.id) {
+          <path class="fx-liga" [class.feita]="trilha().arestasFeitas.has(l.id)" [attr.data-f]="faseDaAresta(l.id)"
+                [attr.d]="l.d" [attr.marker-end]="trilha().arestasFeitas.has(l.id) ? 'url(#fx-seta-' + faseDaAresta(l.id) + ')' : 'url(#fx-seta)'"></path>
+        }
+        <text class="fx-rotulo" x="326" y="252" [class.escolhido]="resposta() === 'sim'">Sim</text>
+        <text class="fx-rotulo" [attr.x]="cx + 8" y="322" [class.escolhido]="resposta() === 'nao'">Não</text>
+
+        <!-- ligações do passo atual: o traço corre de uma caixa para a outra -->
+        @for (l of arestasAnimadas(); track l.chave) {
+          <path class="fx-corre" [attr.data-f]="l.fase" [attr.d]="l.d" pathLength="1" [attr.marker-end]="'url(#fx-seta-' + l.fase + ')'"></path>
+        }
+
+        <!-- caixas -->
+        @for (n of nos; track n.id) {
+          <g class="no" [attr.data-f]="n.fase" [attr.data-e]="estadoNo(n.id)">
+            @if (n.forma === 'losango') {
+              <polygon [attr.points]="pontosLosango(n)"></polygon>
+            } @else {
+              <rect [attr.x]="n.x" [attr.y]="n.y" [attr.width]="n.w" [attr.height]="n.h" rx="6"></rect>
+            }
+            @for (t of n.linhas; track $index) {
+              <text [attr.x]="n.x + n.w / 2" [attr.y]="n.y + n.h / 2 + 5 + ($index - (n.linhas.length - 1) / 2) * 17">{{ t }}</text>
+            }
+          </g>
+        }
+      </svg>
+    </div>
+
+    <!-- CPU E MEMÓRIA -->
+    <div class="painel">
+      <div class="viz-label">CPU e memória</div>
+      <svg class="cpu" [attr.viewBox]="'0 0 680 ' + geo().altura" role="img" [attr.aria-label]="'CPU e memória: ' + a.texto">
+        <defs>
+          <marker id="cpu-seta" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse">
+            <path d="M0 0 L10 5 L0 10 z" class="cpu-ponta"></path>
+          </marker>
+        </defs>
+
+        @for (d of ligacoesCpu(); track $index) { <path class="cpu-liga" [attr.d]="d"></path> }
+
+        <!-- memória -->
+        <g class="memoria">
+          <rect class="mem-fundo" [attr.x]="colC" y="16" width="260" [attr.height]="geo().memAlt" rx="12"></rect>
+          <text class="mem-titulo" [attr.x]="colC + 130" y="40">Memória</text>
+          <text class="mem-col" [attr.x]="colC + 46" y="62">Endereço</text>
+          <text class="mem-col esq" [attr.x]="colC + 92" y="62">Conteúdo</text>
+          @for (l of linhasMem(); track l.end) {
+            <g class="mem-linha" [attr.data-tipo]="l.tipo"
+               [class.atual]="l.tipo === 'instrucao' && l.end === a.end && a.fase !== 'carga'"
+               [attr.data-acesso]="a.memoria?.end === l.end ? a.memoria?.tipo : null"
+               [class.mudou]="mudou('M' + l.end)">
+              <rect [attr.x]="colC + 8" [attr.y]="l.y" width="244" height="22" rx="5"></rect>
+              @if (l.tipo === 'instrucao' && l.end === a.estado.pc && a.fase !== 'fim' && a.fase !== 'erro') {
+                <text class="m-pc" [attr.x]="colC + 14" [attr.y]="l.y + 16">▸</text>
+              }
+              <text class="m-end" [attr.x]="colC + 46" [attr.y]="l.y + 16">{{ l.end }}</text>
+              <text class="m-val" [attr.x]="colC + 92" [attr.y]="l.y + 16">{{ valorMem(l.end) }}</text>
+              <text class="m-nome" [attr.x]="colC + 246" [attr.y]="l.y + 16">{{ l.nome }}</text>
+            </g>
+          }
+        </g>
+
+        <!-- caixas da CPU -->
+        @for (c of caixasFixas; track c) {
+          <g class="caixa" [class.ativo]="ativo(c)" [class.mudou]="mudou(c)">
+            <rect [attr.x]="caixa(c).x" [attr.y]="caixa(c).y" [attr.width]="caixa(c).w" [attr.height]="caixa(c).h" rx="10"></rect>
+            <text class="nome" [attr.x]="caixa(c).x + caixa(c).w / 2" [attr.y]="caixa(c).y + 21">{{ nomes[c] }}</text>
+            <text class="val" [class.ocioso]="['vazio', 'parada', 'parado', 'aguardando'].includes(valorCaixa(c, a))" [class.flags]="c === 'FLAGS'"
+                  [attr.x]="caixa(c).x + caixa(c).w / 2" [attr.y]="caixa(c).y + 46">{{ valorCaixa(c, a) }}</text>
+          </g>
+        }
+        @for (g of regs(); track g.r) {
+          <g class="caixa" [class.ativo]="ativo(g.r)" [class.mudou]="mudou(g.r)">
+            <rect [attr.x]="caixa(g.r).x" [attr.y]="g.y" width="170" height="60" rx="10"></rect>
+            <text class="nome" [attr.x]="caixa(g.r).x + 85" [attr.y]="g.y + 21">{{ g.r }}</text>
+            <text class="val" [class.ocioso]="valorReg(g.r) === 'vazio'" [attr.x]="caixa(g.r).x + 85" [attr.y]="g.y + 46">{{ valorReg(g.r) }}</text>
+          </g>
+        }
+
+        <!-- caminho do dado na micro-operação atual -->
+        @for (s of setas(); track s.chave) {
+          <path class="cpu-seta" [attr.d]="s.d" pathLength="1" marker-end="url(#cpu-seta)"></path>
+        }
+      </svg>
+      <div class="legenda">
+        <span><i class="lg pc">▸</i>PC</span>
+        <span><i class="lg atual"></i>instrução em andamento</span>
+        <span><i class="lg leitura"></i>leitura</span>
+        <span><i class="lg escrita"></i>escrita</span>
+      </div>
     </div>
   </section>
 </div>
