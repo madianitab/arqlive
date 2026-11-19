@@ -75,6 +75,7 @@ export class ExecutorAssemblyComponent {
     return r ? traduzirCpp(r.programa) : null;
   });
   readonly cpp = computed(() => this.traducao()?.codigo ?? '');
+  readonly cppWhile = computed(() => this.traducao()?.codigoWhile ?? '');
   readonly arduino = computed(() => {
     const r = this.resultado();
     return r ? ehArduino(r.programa) : false;
@@ -133,7 +134,7 @@ export class ExecutorAssemblyComponent {
     }
   }
 
-  copiarCpp(): void {
-    navigator.clipboard?.writeText(this.cpp()).catch(() => undefined);
+  copiar(texto: string): void {
+    navigator.clipboard?.writeText(texto).catch(() => undefined);
   }
 }

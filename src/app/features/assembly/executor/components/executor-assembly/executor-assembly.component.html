@@ -71,13 +71,20 @@
       <section class="bloco">
         <div class="bloco-topo">
           <h2>Código em C++ ({{ resultado() && !erros().length ? (arduino() ? 'Arduino' : 'PC') : 'PC ou Arduino' }})</h2>
-          @if (cpp()) { <button type="button" class="copiar" (click)="copiarCpp()" title="Copiar o código C++"><i class="fa-regular fa-copy"></i></button> }
+          @if (cpp()) { <button type="button" class="copiar" (click)="copiar(cpp())" title="Copiar o código C++"><i class="fa-regular fa-copy"></i></button> }
         </div>
-        @if (cpp()) {
-          @if (traducao()?.nivel === 'direto') {
-            <p class="nota">Não foi possível montar o C++ com if/for/while para este programa (ex.: desvios fora dos padrões de if/for/while ou sub-rotina com CALL): o C++ foi traduzido instrução por instrução.</p>
-          }
+        @if (traducao()?.aviso) {
+          <p class="aviso-cpp"><i class="fa-solid fa-triangle-exclamation"></i> {{ traducao()!.aviso }}</p>
+        } @else if (cpp()) {
+          @if (cppWhile()) { <h3 class="cpp-rot">Com for</h3> }
           <pre class="cpp">{{ cpp() }}</pre>
+          @if (cppWhile()) {
+            <div class="bloco-topo cpp-topo">
+              <h3 class="cpp-rot">Com while</h3>
+              <button type="button" class="copiar" (click)="copiar(cppWhile())" title="Copiar o código C++ com while"><i class="fa-regular fa-copy"></i></button>
+            </div>
+            <pre class="cpp">{{ cppWhile() }}</pre>
+          }
         } @else {
           <p class="vazio">O equivalente em C++ aparece aqui depois de executar.</p>
         }

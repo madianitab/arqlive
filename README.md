@@ -7,7 +7,7 @@ Simulador didático de Arquitetura e Organização de Computadores. O aluno escr
 | Assunto | Modo | Rota | Pasta |
 |---|---|---|---|
 | Assembly | Simulador de Assembly (passo a passo) | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
-| Assembly | Executor Assembly (executa e mostra o resultado e o C++ equivalente) | `#/assembly/executor` | `src/app/features/assembly/executor` |
+| Assembly | Executor Assembly (executa e mostra o resultado e o C++ equivalente, sem registradores, com `for` e `while`) | `#/assembly/executor` | `src/app/features/assembly/executor` |
 | Assembly | Tradutor C → Assembly (escreve em C/C++ e vê o Assembly simplificado correspondente) | `#/assembly/tradutor` | `src/app/features/assembly/tradutor` |
 | Assembly | Exercícios (escreve o assembly ou o C, responde às perguntas e confere) | `#/assembly/exercicios` | `src/app/features/assembly/exercicios` |
 
@@ -74,6 +74,25 @@ Exercícios agrupados por assunto (memória e contas, desvios e flags, laços, A
 A conferência **não compara o texto**: executa a resposta do aluno e a de referência e compara o resultado (valores finais das variáveis, TELA, sequência de LEDs e tempo de DELAY). Assim, uma solução com outros registradores também está certa. Nos exercícios de Arduino, confere cada valor de entrada (ex.: BOTAO = 0 e BOTAO = 1). Quando o enunciado pede instruções ("use SUB"), confere se foram usadas. No assembly → C, o C do aluno passa pelo tradutor e é executado.
 
 Os exercícios ficam em `src/app/features/assembly/models/exercicios.ts`; para criar um novo, basta acrescentar um item na lista `EXERCICIOS`.
+
+## Executor Assembly: o C++ equivalente
+
+O Executor mostra o C++ que corresponde ao programa, **sem registradores e sem `goto`**: cada registrador vira uma expressão ou uma variável (o contador `i`, `j`… do laço, a própria variável da memória ou `valor`), e os desvios viram `if`, `for`, `while`, `break`, `continue` ou uma função (`CALL`/`RET`). Quando há `for`, aparece também a versão com `while`.
+
+```
+soma: 0                       for (int i = 1; i <= 4; i++) {      int soma = 0, i = 1;
+i: 1                            soma = soma + i;                  while (i <= 4) {
+LOAD R1, soma                 }                                     soma = soma + i;
+LOAD R2, i                                                          i++;
+LOOP: CMP R2, 4                                                   }
+      JG  FIM
+      ADD R1, R2
+      ADD R2, 1
+      JMP LOOP
+FIM:  STORE soma, R1
+```
+
+Se um desvio não corresponder a if/for/while (por exemplo, um salto para o meio de um laço), a tela mostra um aviso no lugar do C++. A lógica fica em `src/app/features/assembly/models/cpp.ts`.
 
 ## Tradutor C → Assembly
 

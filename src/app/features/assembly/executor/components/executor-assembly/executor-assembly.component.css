@@ -49,6 +49,9 @@
   font-family: var(--f-mono); font-size: 12.5px; line-height: 1.55; color: var(--text);
   background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm);
 }
+.cpp-rot { margin: 0 0 6px; font-family: var(--f-mono); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); }
+.cpp-topo { margin-top: 12px; }
+.cpp-topo .cpp-rot { margin: 0; }
 .copiar { border: 1px solid var(--line); background: var(--surface); color: var(--text-2); border-radius: var(--r-xs); width: 28px; height: 26px; cursor: pointer; margin-bottom: 8px; }
 .copiar:hover { color: var(--a); border-color: var(--a); }
 
@@ -72,4 +75,5 @@
 .st-erro { color: var(--err-deep, var(--err)); }
 .st-link { color: var(--a); text-decoration: none; }
 .st-link:hover { text-decoration: underline; }
-.nota { margin: 0 0 8px; font-size: 12.5px; color: var(--text-2); }
+.aviso-cpp { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text); background: var(--surface-2); border-left: 3px solid var(--warn); border-radius: var(--r-sm); padding: 8px 10px; }
+.aviso-cpp i { color: var(--warn); margin-right: 4px; }
