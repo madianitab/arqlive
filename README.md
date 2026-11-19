@@ -7,7 +7,7 @@ Simulador didático de Arquitetura e Organização de Computadores. O aluno escr
 | Assunto | Modo | Rota | Pasta |
 |---|---|---|---|
 | Assembly | Simulador de Assembly (passo a passo) | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
-| Assembly | Executor de código (executa e mostra o resultado e o C++ equivalente) | `#/assembly/executor` | `src/app/features/assembly/executor` |
+| Assembly | Executor Assembly (executa e mostra o resultado e o C++ equivalente) | `#/assembly/executor` | `src/app/features/assembly/executor` |
 | Assembly | Tradutor C → Assembly (escreve em C/C++ e vê o Assembly simplificado correspondente) | `#/assembly/tradutor` | `src/app/features/assembly/tradutor` |
 
 Em cada assunto, `models/` e `services/` ficam na raiz da pasta e são compartilhados entre os modos.
