@@ -112,7 +112,7 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
             <a class="deck-link" href="#/assembly/exercicios" (click)="go('/assembly/exercicios'); $event.preventDefault()">
               <os-card title="Exercícios">
                 <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></os-card-icon>
-                Os exercícios dos slides, com conferência na hora.
+                Escreva o assembly, responda e confira na hora.
               </os-card>
             </a>
           </div>

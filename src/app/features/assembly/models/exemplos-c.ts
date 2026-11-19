@@ -1,6 +1,5 @@
 /**
- * Programas em C/C++ do tradutor C → Assembly, tirados das Aulas 14 e 15 de ArqII
- * ("Do C++ ao Assembly"). Cada um tem a resposta correspondente no slide.
+ * Programas de exemplo do tradutor C → Assembly.
  */
 export interface ExemploC {
   id: string;

@@ -36,13 +36,13 @@ import { OsBadgeComponent } from '../../ui/badge/badge.component';
       <os-card title="Tradutor C → Assembly">
         <os-card-icon slot="icon" variant="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/></svg></os-card-icon>
         <os-badge slot="badge" variant="s">tradutor</os-badge>
-        Escreva em C/C++ (PC ou Arduino) e veja o Assembly simplificado correspondente, como nas respostas dos slides.
+        Escreva em C/C++ (PC ou Arduino) e veja o Assembly simplificado correspondente.
         <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/tradutor')">Abrir →</os-button></div>
       </os-card>
       <os-card title="Exercícios">
         <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></os-card-icon>
         <os-badge slot="badge" variant="s">exercícios</os-badge>
-        Os exercícios dos slides: escreva o assembly (ou o C), responda às perguntas e confira na hora.
+        Escreva o assembly (ou o C), responda às perguntas e confira na hora.
         <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/exercicios')">Abrir →</os-button></div>
       </os-card>
     </div>

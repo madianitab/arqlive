@@ -1,14 +1,12 @@
 /**
- * Exercícios das Aulas 14 e 15 de ArqII ("Do C++ ao Assembly") — os dos slides ("Aula X · slide Y")
- * e outros no mesmo estilo ("Aula X · prática"), só com instruções dos slides — e a conferência das respostas
- * (lógica pura, sem Angular).
+ * Exercícios de Assembly simplificado e a conferência das respostas (lógica pura, sem Angular).
  *
  * Tipos de exercício:
  * - c-para-asm: o aluno escreve o Assembly simplificado de um código em C;
- * - asm-para-c: o aluno escreve o C de um programa em assembly (slide 25 da Aula 14);
+ * - asm-para-c: o aluno escreve o C de um programa em assembly;
  * - perguntas: só perguntas sobre um trecho dado (ex.: prever as flags de um CMP).
  *
- * A conferência não compara o texto: executa a resposta do aluno e a do slide e compara o
+ * A conferência não compara o texto: executa a resposta do aluno e a de referência e compara o
  * resultado (valores finais das variáveis, o que apareceu na TELA, a sequência de LEDs e o
  * tempo de DELAY). Assim, uma solução com outros registradores também está certa.
  */
@@ -31,14 +29,14 @@ export interface Pergunta {
 
 export interface Exercicio {
   id: string;
-  /** Origem no material (ex.: "Aula 14 · slide 17"). */
-  origem: string;
+  /** Assunto (agrupa os exercícios na lista). */
+  tema: Tema;
   titulo: string;
   enunciado: string;
   tipo: TipoExercicio;
   /** Código dado: C (c-para-asm) ou assembly (asm-para-c e perguntas). */
   codigo: string;
-  /** Resposta do slide: assembly (c-para-asm) ou C (asm-para-c). */
+  /** Resposta de referência: assembly (c-para-asm) ou C (asm-para-c). */
   gabarito?: string;
   /** Instruções que o enunciado pede para usar. */
   usar?: string[];
@@ -52,10 +50,14 @@ export interface Exercicio {
 
 // ─────────────────────────── exercícios ───────────────────────────
 
-export const EXERCICIOS: Exercicio[] = [
+/** Assuntos, na ordem da lista. */
+export const TEMAS = ['Memória e contas', 'Desvios e flags', 'Laços', 'Arduino', 'Assembly → C'] as const;
+export type Tema = typeof TEMAS[number];
+
+const LISTA: Exercicio[] = [
   {
-    id: 'a14-y-igual-x',
-    origem: 'Aula 14 · slide 17',
+    id: 'y-igual-x',
+    tema: 'Memória e contas',
     titulo: 'Y = X',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
@@ -73,8 +75,8 @@ STORE Y, R2`,
     dica: 'Declare as variáveis na memória (X: 10, Y: vazio). Só LOAD e STORE acessam a memória.',
   },
   {
-    id: 'a14-x-mais-y',
-    origem: 'Aula 14 · slide 19',
+    id: 'x-mais-y',
+    tema: 'Memória e contas',
     titulo: 'X = X + Y; Y++',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
@@ -97,8 +99,8 @@ STORE Y, R2`,
     dica: 'O Y já está num registrador depois da primeira conta: dá para usá-lo no Y++.',
   },
   {
-    id: 'a14-a-expressao',
-    origem: 'Aula 14 · slide 21',
+    id: 'a-expressao',
+    tema: 'Memória e contas',
     titulo: 'A = A * 3 + 2 + 5',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
@@ -117,8 +119,8 @@ STORE A, R1`,
     dica: 'Faça as contas no registrador, da esquerda para a direita, e grave no fim.',
   },
   {
-    id: 'a14-d-diferenca',
-    origem: 'Aula 14 · slide 23',
+    id: 'd-diferenca',
+    tema: 'Memória e contas',
     titulo: 'D = T - L; D = D * 2',
     enunciado: 'Escreva o Assembly simplificado (use SUB).',
     tipo: 'c-para-asm',
@@ -140,8 +142,8 @@ STORE D, R1`,
     usar: ['SUB'],
   },
   {
-    id: 'a14-asm-para-c',
-    origem: 'Aula 14 · slide 25',
+    id: 'asm-para-c',
+    tema: 'Assembly → C',
     titulo: 'Qual seria o código em C?',
     enunciado: 'Escreva o código em C que corresponde a este assembly.',
     tipo: 'asm-para-c',
@@ -164,8 +166,8 @@ STORE B, R2`,
     dica: 'Siga os registradores: R1 começa com A e R2 com B. O que cada um vale quando é gravado?',
   },
   {
-    id: 'a14-troca',
-    origem: 'Aula 14 · prática',
+    id: 'troca',
+    tema: 'Memória e contas',
     titulo: 'Troca: C = A; A = B; B = C',
     enunciado: 'Escreva o Assembly simplificado. No final, A e B devem estar trocados.',
     tipo: 'c-para-asm',
@@ -190,8 +192,8 @@ STORE B, R1`,
     dica: 'O valor de A continua em R1 depois do primeiro STORE: dá para usá-lo no B = C.',
   },
   {
-    id: 'a14-expressao-parenteses',
-    origem: 'Aula 14 · prática',
+    id: 'expressao-parenteses',
+    tema: 'Memória e contas',
     titulo: 'M = (A + B) * 2 - C',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
@@ -215,8 +217,8 @@ STORE M, R1`,
     dica: 'Comece pelos parênteses: some A e B num registrador e continue as contas nele.',
   },
   {
-    id: 'a14-printf',
-    origem: 'Aula 14 · prática',
+    id: 'printf',
+    tema: 'Memória e contas',
     titulo: 'X = X * X com printf',
     enunciado: 'Escreva o Assembly simplificado, com a impressão (como no exemplo X = X + 2).',
     tipo: 'c-para-asm',
@@ -241,8 +243,8 @@ HALT`,
     dica: 'O texto do printf vai para a variável TEXTO e é exibido com CALL imprime; o valor sai com OUT TELA, R1.',
   },
   {
-    id: 'a14-asm-para-c-2',
-    origem: 'Aula 14 · prática',
+    id: 'asm-para-c-2',
+    tema: 'Assembly → C',
     titulo: 'Qual seria o código em C? (2)',
     enunciado: 'Escreva o código em C que corresponde a este assembly.',
     tipo: 'asm-para-c',
@@ -263,8 +265,8 @@ STORE Q, R1`,
     dica: 'Acompanhe o R1: começa com Q, perde o P (que está em R2) e depois é multiplicado por 2. Atenção à ordem das contas.',
   },
   {
-    id: 'a15-x-vezes-3',
-    origem: 'Aula 15 · slide 2',
+    id: 'x-vezes-3',
+    tema: 'Memória e contas',
     titulo: 'X = X * 3 - 1',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
@@ -279,9 +281,9 @@ SUB R1, 1
 STORE X, R1`,
   },
   {
-    id: 'a15-if-b-igual-2',
-    origem: 'Aula 15 · slide 3',
-    titulo: 'Revisão 1: if (B == 2)',
+    id: 'if-b-igual-2',
+    tema: 'Desvios e flags',
+    titulo: 'if (B == 2)',
     enunciado: 'Escreva o Assembly simplificado. Use LOAD, SUB, STORE, CMP e JNE. Depois, responda.',
     tipo: 'c-para-asm',
     codigo: `int A = 4, B = 6;
@@ -310,9 +312,9 @@ FIM:`,
     ],
   },
   {
-    id: 'a15-cmp-flags',
-    origem: 'Aula 15 · slide 5',
-    titulo: 'Revisão 2: CMP e Flags',
+    id: 'cmp-flags',
+    tema: 'Desvios e flags',
+    titulo: 'CMP com R1 menor',
     enunciado: 'Preveja as flags e o salto antes de executar o trecho (R1 = 4 e R2 = 9).',
     tipo: 'perguntas',
     codigo: `; R1 = 4 e R2 = 9
@@ -326,9 +328,9 @@ JE  IGUAL`,
     ],
   },
   {
-    id: 'a15-digitalwrite',
-    origem: 'Aula 15 · slide 7',
-    titulo: 'Arduino: digitalWrite',
+    id: 'digitalwrite',
+    tema: 'Arduino',
+    titulo: 'digitalWrite (pisca o LED)',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
     codigo: `digitalWrite(led, HIGH);
@@ -345,9 +347,9 @@ DELAY 1000`,
     dica: 'A CPU não escreve direto na porta: carregue o valor num registrador e depois use OUT LED, R1.',
   },
   {
-    id: 'a15-digitalread',
-    origem: 'Aula 15 · slide 8',
-    titulo: 'Arduino: digitalRead',
+    id: 'digitalread',
+    tema: 'Arduino',
+    titulo: 'digitalRead (botão)',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
     codigo: `estado = digitalRead(botao);
@@ -360,9 +362,9 @@ STORE ESTADO, R1`,
     dica: 'Declare ESTADO na memória (ESTADO: vazio). Ler o botão vira IN R1, BOTAO.',
   },
   {
-    id: 'a15-analogread',
-    origem: 'Aula 15 · slide 9',
-    titulo: 'Arduino: analogRead',
+    id: 'analogread',
+    tema: 'Arduino',
+    titulo: 'analogRead (sensor)',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
     codigo: `valor = analogRead(A0);
@@ -374,8 +376,8 @@ STORE VALOR, R1`,
     casos: [{ A0: 0 }, { A0: 512 }, { A0: 1023 }],
   },
   {
-    id: 'a15-if-botao',
-    origem: 'Aula 15 · slide 10',
+    id: 'if-botao',
+    tema: 'Arduino',
     titulo: 'if (botão) acende o LED',
     enunciado: 'Escreva o Assembly simplificado. Use IN, CMP, JNE, LOAD e OUT. Depois, responda.',
     tipo: 'c-para-asm',
@@ -398,8 +400,8 @@ FIM:`,
     ],
   },
   {
-    id: 'a15-for-soma',
-    origem: 'Aula 15 · slide 14',
+    id: 'for-soma',
+    tema: 'Laços',
     titulo: 'Loop: soma de 1 a 4',
     enunciado: 'Escreva o Assembly simplificado. Use LOAD, ADD, CMP, JG, JMP e STORE. Depois, responda.',
     tipo: 'c-para-asm',
@@ -428,8 +430,8 @@ FIM:   STORE soma, R1`,
     ],
   },
   {
-    id: 'a15-for-leds',
-    origem: 'Aula 15 · slide 16',
+    id: 'for-leds',
+    tema: 'Arduino',
     titulo: 'Loop for com LEDs',
     enunciado: 'Escreva o Assembly simplificado.',
     tipo: 'c-para-asm',
@@ -458,8 +460,8 @@ FIM:`,
     dica: 'LOAD R2, LEDS[R1] lê a posição R1 do vetor; OUT R2, R3 usa o pino cujo número está em R2.',
   },
   {
-    id: 'a15-cmp-iguais',
-    origem: 'Aula 15 · prática',
+    id: 'cmp-iguais',
+    tema: 'Desvios e flags',
     titulo: 'CMP com valores iguais',
     enunciado: 'Preveja as flags e o salto (R1 = 7 e R2 = 7).',
     tipo: 'perguntas',
@@ -474,15 +476,15 @@ JNE DIFERENTE`,
     ],
   },
   {
-    id: 'a15-cmp-maior',
-    origem: 'Aula 15 · prática',
+    id: 'cmp-maior',
+    tema: 'Desvios e flags',
     titulo: 'CMP com R1 maior',
     enunciado: 'Preveja as flags e o salto (R1 = 9 e R2 = 4).',
     tipo: 'perguntas',
     codigo: `; R1 = 9 e R2 = 4
 CMP R1, R2
 JG  MAIOR`,
-    dica: 'O JG pula quando Z = 0 e N = 0 (tabela do slide 12).',
+    dica: 'O JG pula quando Z = 0 e N = 0.',
     perguntas: [
       { id: 'conta', texto: 'Quanto vale R1 − R2?', tipo: 'numero', resposta: '5', explicacao: '9 − 4 = 5 (não é guardado)' },
       { id: 'flags', texto: 'Quais os valores de Z, N e C? (ex.: 0, 1, 0)', tipo: 'bits', resposta: '000', explicacao: 'Z = 0, N = 0, C = 0' },
@@ -490,8 +492,8 @@ JG  MAIOR`,
     ],
   },
   {
-    id: 'a15-if-else',
-    origem: 'Aula 15 · prática',
+    id: 'if-else',
+    tema: 'Desvios e flags',
     titulo: 'if-else',
     enunciado: 'Escreva o Assembly simplificado. Use CMP, JNE e JMP. Depois, responda.',
     tipo: 'c-para-asm',
@@ -523,8 +525,8 @@ FIM:`,
     ],
   },
   {
-    id: 'a15-while-contagem',
-    origem: 'Aula 15 · prática',
+    id: 'while-contagem',
+    tema: 'Laços',
     titulo: 'while: contagem regressiva',
     enunciado: 'Escreva o Assembly simplificado. Use CMP, JE e JMP. Depois, responda.',
     tipo: 'c-para-asm',
@@ -550,8 +552,8 @@ FIM:   STORE c, R1`,
     ],
   },
   {
-    id: 'a15-for-vetor',
-    origem: 'Aula 15 · prática',
+    id: 'for-vetor',
+    tema: 'Laços',
     titulo: 'for: soma de um vetor',
     enunciado: 'Escreva o Assembly simplificado. Use o vetor com LOAD R, V[R1]. Depois, responda.',
     tipo: 'c-para-asm',
@@ -581,8 +583,8 @@ FIM:   STORE total, R1`,
     ],
   },
   {
-    id: 'a15-asm-para-c-laco',
-    origem: 'Aula 15 · prática',
+    id: 'asm-para-c-laco',
+    tema: 'Assembly → C',
     titulo: 'Qual seria o código em C? (laço)',
     enunciado: 'Escreva o código em C (com for) que corresponde a este assembly.',
     tipo: 'asm-para-c',
@@ -606,8 +608,8 @@ for (int i = 0; i < 3; i++)
     dica: 'R2 é o contador (i) e R1 guarda X. Quantas voltas o laço dá e o que acontece com X em cada uma?',
   },
   {
-    id: 'a15-botao-if-else',
-    origem: 'Aula 15 · prática',
+    id: 'botao-if-else',
+    tema: 'Arduino',
     titulo: 'Botão: acende ou apaga o LED',
     enunciado: 'Escreva o Assembly simplificado. Use IN, CMP, JNE, JMP e OUT.',
     tipo: 'c-para-asm',
@@ -631,8 +633,8 @@ FIM:`,
     dica: 'É um if-else: o JNE leva para o bloco que apaga o LED, e um JMP pula esse bloco quando o LED acende.',
   },
   {
-    id: 'a15-sensor',
-    origem: 'Aula 15 · prática',
+    id: 'sensor',
+    tema: 'Arduino',
     titulo: 'Sensor: acende o LED acima de 500',
     enunciado: 'Escreva o Assembly simplificado. Use IN, CMP, JG, JMP e OUT. Depois, responda.',
     tipo: 'c-para-asm',
@@ -657,6 +659,9 @@ FIM:`,
     ],
   },
 ];
+
+/** Exercícios agrupados por assunto. */
+export const EXERCICIOS: Exercicio[] = TEMAS.flatMap(t => LISTA.filter(e => e.tema === t));
 
 // ─────────────────────────── conferência ───────────────────────────
 

@@ -5,8 +5,8 @@ import { TabelaInstrucoesComponent } from 'src/app/features/assembly/components/
 import { EditorAssemblyComponent } from 'src/app/features/assembly/simulador/components/editor-assembly/editor-assembly.component';
 
 /**
- * Exercícios das Aulas 14 e 15: o aluno escreve o assembly (ou o C) e responde às perguntas;
- * a conferência executa a resposta dele e a do slide e compara o resultado.
+ * Exercícios: o aluno escreve o assembly (ou o C) e responde às perguntas;
+ * a conferência executa a resposta dele e a de referência e compara o resultado.
  */
 @Component({
   selector: 'app-exercicios-assembly',
@@ -35,11 +35,10 @@ export class ExerciciosAssemblyComponent {
   readonly grupos = computed(() => {
     const g = new Map<string, { i: number; e: Exercicio }[]>();
     this.exercicios.forEach((e, i) => {
-      const aula = e.origem.split(' · ')[0];
-      if (!g.has(aula)) g.set(aula, []);
-      g.get(aula)!.push({ i, e });
+      if (!g.has(e.tema)) g.set(e.tema, []);
+      g.get(e.tema)!.push({ i, e });
     });
-    return [...g.entries()].map(([aula, itens]) => ({ aula, itens }));
+    return [...g.entries()].map(([tema, itens]) => ({ tema, itens }));
   });
 
   escolher(i: number | string): void {

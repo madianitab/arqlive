@@ -20,8 +20,8 @@ function rodar(c: string, entradas: Record<string, number> = {}) {
   return { mem, saida: f.saida, pinos: f.pinos, codigo: t.codigo };
 }
 
-describe('Tradutor C → Assembly (respostas dos slides)', () => {
-  it('X = X + 2 com printf (Aula 14, slide 14)', () => {
+describe('Tradutor C → Assembly (traduções esperadas)', () => {
+  it('X = X + 2 com printf', () => {
     expect(asm('main(){\n int X = 5;\n X = X + 2;\n printf("X = %d", X);\n}')).toEqual([
       'X: 5', 'TEXTO: "X = "',
       'LOAD R1, X', 'ADD R1, 2', 'STORE X, R1',
@@ -29,42 +29,42 @@ describe('Tradutor C → Assembly (respostas dos slides)', () => {
     ]);
   });
 
-  it('X = X + Y; Y++ reaproveita o Y que está em R2 (slide 20)', () => {
+  it('X = X + Y; Y++ reaproveita o Y que está em R2', () => {
     expect(asm('int X = 10, Y = 20;\nX = X + Y;\nY++;')).toEqual([
       'X: 10', 'Y: 20', 'LOAD R1, X', 'LOAD R2, Y', 'ADD R1, R2', 'STORE X, R1', 'ADD R2, 1', 'STORE Y, R2',
     ]);
   });
 
-  it('A = A * 3 + 2 + 5 (slide 22)', () => {
+  it('A = A * 3 + 2 + 5', () => {
     expect(asm('int A = 8;\nA = A * 3 + 2 + 5;')).toEqual(['A: 8', 'LOAD R1, A', 'MUL R1, 3', 'ADD R1, 2', 'ADD R1, 5', 'STORE A, R1']);
   });
 
-  it('D = T - L; D = D * 2 com um STORE só (slide 24)', () => {
+  it('D = T - L; D = D * 2 com um STORE só', () => {
     expect(asm('int T = 30, L = 25;\nint D = T - L;\nD = D * 2;')).toEqual([
       'T: 30', 'L: 25', 'D: vazio', 'LOAD R1, T', 'LOAD R2, L', 'SUB R1, R2', 'MUL R1, 2', 'STORE D, R1',
     ]);
   });
 
-  it('A = A * B; B = B + A (slide 26)', () => {
+  it('A = A * B; B = B + A', () => {
     expect(asm('int A = 8, B = 3;\nA = A * B;\nB = B + A;')).toEqual([
       'A: 8', 'B: 3', 'LOAD R1, A', 'LOAD R2, B', 'MUL R1, R2', 'STORE A, R1', 'ADD R2, R1', 'STORE B, R2',
     ]);
   });
 
-  it('if vira CMP + JNE (Aula 15, slide 4)', () => {
+  it('if vira CMP + JNE', () => {
     expect(asm('int A = 4, B = 6;\nB = B - A;\nif (B == 2) { A = B; }')).toEqual([
       'A: 4', 'B: 6', 'LOAD R1, B', 'LOAD R2, A', 'SUB R1, R2', 'STORE B, R1', 'CMP R1, 2', 'JNE FIM', 'STORE A, R1', 'FIM:',
     ]);
   });
 
-  it('for com soma: variáveis presas em registradores (Aula 15, slide 15)', () => {
+  it('for com soma: variáveis presas em registradores', () => {
     expect(asm('int soma = 0;\nfor (int i = 1; i <= 4; i++)\n  soma = soma + i;')).toEqual([
       'soma: 0', 'i: 1', 'LOAD R1, soma', 'LOAD R2, i',
       'LOOP:', 'CMP R2, 4', 'JG FIM', 'ADD R1, R2', 'ADD R2, 1', 'JMP LOOP', 'FIM:', 'STORE soma, R1',
     ]);
   });
 
-  it('for com LEDs: vetor com índice no registrador (Aula 15, slide 16)', () => {
+  it('for com LEDs: vetor com índice no registrador', () => {
     expect(asm('int leds[] = {8, 9, 10};\nfor (int i = 0; i < 3; i++) {\n digitalWrite(leds[i], HIGH);\n delay(200);\n digitalWrite(leds[i], LOW);\n}')).toEqual([
       'leds: 8, 9, 10', 'i: 0', 'LOAD R1, i',
       'LOOP:', 'CMP R1, 3', 'JGE FIM', 'LOAD R2, leds[R1]', 'LOAD R3, 1', 'OUT R2, R3', 'DELAY 200', 'LOAD R3, 0', 'OUT R2, R3',
@@ -72,7 +72,7 @@ describe('Tradutor C → Assembly (respostas dos slides)', () => {
     ]);
   });
 
-  it('Arduino: digitalWrite, digitalRead e analogRead (Aula 15, slides 7 a 11)', () => {
+  it('Arduino: digitalWrite, digitalRead e analogRead', () => {
     expect(asm('digitalWrite(led, HIGH);\ndelay(1000);\ndigitalWrite(led, LOW);')).toEqual(['LOAD R1, 1', 'OUT LED, R1', 'DELAY 1000', 'LOAD R1, 0', 'OUT LED, R1']);
     expect(asm('int estado;\nestado = digitalRead(botao);')).toEqual(['estado: vazio', 'IN R1, BOTAO', 'STORE estado, R1']);
     expect(asm('int valor;\nvalor = analogRead(A0);')).toEqual(['valor: vazio', 'IN R1, A0', 'STORE valor, R1']);
@@ -94,7 +94,7 @@ describe('Tradutor C → Assembly (execução no simulador)', () => {
     EXEMPLOS_C.forEach(e => rodar(e.codigo, e.entradas));
   });
 
-  it('valores finais dos exemplos dos slides', () => {
+  it('valores finais dos exemplos', () => {
     const ex = (id: string) => EXEMPLOS_C.find(e => e.id === id)!;
     expect(rodar(ex('x-mais-2').codigo).saida).toBe('X = 7\n');
     expect(rodar(ex('d-diferenca').codigo).mem['D']).toBe('10');

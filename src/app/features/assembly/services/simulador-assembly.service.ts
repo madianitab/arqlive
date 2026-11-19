@@ -10,7 +10,7 @@ export type ModoPasso = 'ciclo' | 'instrucao';
 /** Tabela de rastreamento: acompanha a execução ou vira exercício para o aluno preencher. */
 export type ModoRastreamento = 'acompanhar' | 'exercicio';
 
-/** Linhas mostradas na tabela (o exercício fica curto, como nos slides). */
+/** Linhas mostradas na tabela (o exercício fica curto). */
 export const LIMITE_RASTREAMENTO = 200;
 export const LIMITE_EXERCICIO = 30;
 

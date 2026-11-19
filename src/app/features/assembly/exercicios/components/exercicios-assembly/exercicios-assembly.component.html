@@ -2,12 +2,12 @@
   <header class="exec-bar">
     <div class="exec-titulo">
       <h1>Exercícios</h1>
-      <span>Do C++ ao Assembly · Aulas 14 e 15</span>
+      <span>Do C ao Assembly</span>
     </div>
     <div class="exec-acoes">
       <select class="exec-select" aria-label="Exercício" [ngModel]="indice()" (ngModelChange)="escolher($event)">
-        @for (g of grupos(); track g.aula) {
-          <optgroup [label]="g.aula">
+        @for (g of grupos(); track g.tema) {
+          <optgroup [label]="g.tema">
             @for (it of g.itens; track it.e.id) {
               <option [ngValue]="it.i">{{ feitos().has(it.e.id) ? '✓ ' : '' }}{{ it.e.titulo }}</option>
             }
@@ -16,7 +16,7 @@
       </select>
       <button type="button" class="exec-btn" (click)="tabela.abrir()" title="Tabela de instruções"><i class="fa-solid fa-book-open"></i> Instruções</button>
       <button type="button" class="exec-btn" [class.ativo]="mostrarResposta()" (click)="mostrarResposta.set(!mostrarResposta())"
-              title="Mostrar a resposta do slide"><i class="fa-solid fa-eye"></i> {{ mostrarResposta() ? 'Esconder resposta' : 'Ver resposta' }}</button>
+              title="Mostrar uma resposta certa"><i class="fa-solid fa-eye"></i> {{ mostrarResposta() ? 'Esconder resposta' : 'Ver resposta' }}</button>
       <button type="button" class="exec-btn primario" (click)="conferir()" title="Conferir (Ctrl + Enter)"><i class="fa-solid fa-check"></i> Conferir</button>
     </div>
   </header>
@@ -25,7 +25,7 @@
     <section class="exec-editor">
       <div class="enun">
         <div class="enun-topo">
-          <span class="enun-origem">{{ ex().origem }}</span>
+          <span class="enun-origem">{{ ex().tema }}</span>
           @if (feitos().has(ex().id)) { <span class="enun-feito"><i class="fa-solid fa-check"></i> feito</span> }
         </div>
         <h2>{{ ex().titulo }}</h2>
@@ -92,7 +92,7 @@
             <p class="nota">Perguntas: {{ acertos(c) }} de {{ ex().perguntas?.length }} certas.</p>
           }
           @if (!c.ok && ex().tipo !== 'perguntas') {
-            <p class="nota">A conferência executa a sua resposta e a do slide e compara o resultado: memória{{ ex().casos?.length ? ' (para cada valor de entrada)' : '' }}, TELA e portas.</p>
+            <p class="nota">A conferência executa a sua resposta e a de referência e compara o resultado: memória{{ ex().casos?.length ? ' (para cada valor de entrada)' : '' }}, TELA e portas.</p>
           }
         } @else {
           <p class="vazio">{{ ex().tipo === 'perguntas' ? 'Responda e clique em Conferir.' : 'Escreva a resposta e clique em Conferir (Ctrl + Enter).' }}</p>
@@ -101,7 +101,7 @@
 
       @if (mostrarResposta() && ex().gabarito) {
         <section class="bloco">
-          <h2>Resposta do slide</h2>
+          <h2>Uma resposta certa</h2>
           <app-editor-assembly class="enun-codigo" [linguagem]="linguagemResposta()" [somenteLeitura]="true" [codigo]="ex().gabarito!"></app-editor-assembly>
           @if (ex().tipo === 'c-para-asm') { <p class="nota">Outras respostas também estão certas se o resultado for o mesmo.</p> }
         </section>

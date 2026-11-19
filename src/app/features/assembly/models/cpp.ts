@@ -1,6 +1,6 @@
 /**
  * Gera o código C++ (PC ou Arduino) que corresponde a um programa em Assembly simplificado,
- * no estilo das aulas: sem registradores, com expressões, if e for.
+ * legível: sem registradores, com expressões, if e for.
  *
  *   LOAD R1, X / ADD R1, 2 / STORE D, R1     →   D = X + 2;
  *   IN R1, BOTAO / CMP R1, 1 / JNE FIM …     →   if (digitalRead(botao) == HIGH) { … }
@@ -95,7 +95,7 @@ const DESVIOS = new Set(['JE', 'JNE', 'JG', 'JGE', 'JL', 'JLE']);
 
 export interface ResultadoCpp {
   codigo: string;
-  /** 'alto': no estilo das aulas; 'direto': instrução por instrução (estrutura não reconhecida). */
+  /** 'alto': legível (expressões, if, for); 'direto': instrução por instrução (estrutura não reconhecida). */
   nivel: 'alto' | 'direto';
 }
 

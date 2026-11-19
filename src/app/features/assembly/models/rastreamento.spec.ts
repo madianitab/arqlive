@@ -6,7 +6,7 @@ const ex = (id: string) => EXEMPLOS_ASSEMBLY.find(e => e.id === id)!;
 const rast = (codigo: string, entradas: Record<string, number> = {}) => gerarRastreamento(simular(codigo, entradas));
 
 describe('Tabela de rastreamento', () => {
-  it('X = X + 2: resposta do slide 16 (Aula 14)', () => {
+  it('X = X + 2: tabela esperada', () => {
     const r = rast(ex('x-mais-2').codigo);
     expect(r.inicial).toEqual(['X = 5', 'R1 vazio']);
     expect(r.colunas.map(c => c.id)).toEqual(['R1', 'M:X', 'ULA', 'Z', 'N', 'C', 'PROX']);
@@ -23,7 +23,7 @@ describe('Tabela de rastreamento', () => {
     expect(r.linhas.map(l => l.valores['PROX'])).toEqual(['1', '2', '3', '4', '5', '6', 'fim']);
   });
 
-  it('for com LEDs: flag Z, pino em R2 e próximo PC (slide 19 da Aula 15)', () => {
+  it('for com LEDs: flag Z, pino em R2 e próximo PC', () => {
     const r = rast(ex('for-leds').codigo);
     const cmps = r.linhas.filter(l => l.ir === 'CMP R1, 3');
     expect(cmps.map(l => [l.valores['R1'], l.valores['Z']])).toEqual([['0', '0'], ['1', '0'], ['2', '0'], ['3', '1']]);

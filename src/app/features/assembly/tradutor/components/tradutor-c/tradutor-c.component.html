@@ -5,8 +5,8 @@
       <span>C/C++ (PC ou Arduino) → Assembly simplificado</span>
     </div>
     <div class="exec-acoes">
-      <select class="exec-select" aria-label="Exemplo da aula" [ngModel]="exemplo()" (ngModelChange)="carregarExemplo($event)">
-        <option value="">Exemplos da aula…</option>
+      <select class="exec-select" aria-label="Exemplo" [ngModel]="exemplo()" (ngModelChange)="carregarExemplo($event)">
+        <option value="">Exemplos…</option>
         @for (e of exemplos; track e.id) { <option [value]="e.id">{{ e.nome }}</option> }
       </select>
       <button type="button" class="exec-btn" [class.ativo]="comentarios()" [attr.aria-pressed]="comentarios()" (click)="alternarComentarios()"

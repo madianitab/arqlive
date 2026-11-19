@@ -7,14 +7,14 @@ const ex = (id: string) => cpp(EXEMPLOS_ASSEMBLY.find(e => e.id === id)!.codigo)
 /** Linhas do corpo, sem espaços nas pontas. */
 const linhas = (c: string) => c.split('\n').map(l => l.trim()).filter(Boolean);
 
-describe('C++ no estilo das aulas (sem registradores)', () => {
-  it('X = X + 2 com printf (slide 14)', () => {
+describe('C++ legível (sem registradores)', () => {
+  it('X = X + 2 com printf', () => {
     const r = ex('x-mais-2');
     expect(r.nivel).toBe('alto');
     expect(linhas(r.codigo)).toEqual(['#include <stdio.h>', 'int main() {', 'int X = 5;', 'X = X + 2;', 'printf("X = %d", X);', '}']);
   });
 
-  it('respostas dos desafios do slide', () => {
+  it('respostas dos desafios', () => {
     expect(linhas(ex('y-igual-x').codigo)).toContain('Y = X;');
     expect(linhas(ex('x-mais-y').codigo)).toEqual(jasmine.arrayContaining(['X = X + Y;', 'Y++;']));
     expect(linhas(ex('a-vezes-b').codigo)).toEqual(jasmine.arrayContaining(['int A = 8, B = 3;', 'A = A * B;', 'B = B + A;']));
@@ -33,12 +33,12 @@ describe('C++ no estilo das aulas (sem registradores)', () => {
     expect(linhas(ex('sensor').codigo)).toContain('VALOR = analogRead(A0);');
   });
 
-  it('if do botão (slide 6)', () => {
+  it('if do botão', () => {
     const l = linhas(ex('if-botao').codigo);
     expect(l).toEqual(jasmine.arrayContaining(['if (digitalRead(botao) == HIGH) {', 'digitalWrite(led, HIGH);']));
   });
 
-  it('for com LEDs (slide 7)', () => {
+  it('for com LEDs', () => {
     const l = linhas(ex('for-leds').codigo);
     expect(l).toEqual(jasmine.arrayContaining([
       'int LEDS[] = {8, 9, 10};', 'for (int i = 0; i < 3; i++) {',
@@ -118,7 +118,7 @@ HALT`);
     expect(linhas(r.codigo)).toEqual(jasmine.arrayContaining(['int valor = 5;', 'while (valor != 0) {', 'printf("%d", valor);', 'valor--;']));
   });
 
-  it('todos os exemplos saem no estilo das aulas', () => {
+  it('todos os exemplos saem legíveis', () => {
     EXEMPLOS_ASSEMBLY.forEach(e => expect(cpp(e.codigo).nivel).withContext(e.id).toBe('alto'));
   });
 });
