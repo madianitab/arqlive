@@ -5,8 +5,8 @@
       <span>Assembly simplificado · PC e Arduino</span>
     </div>
     <div class="exec-acoes">
-      <select class="exec-select" aria-label="Exemplo da aula" [ngModel]="exemplo()" (ngModelChange)="carregarExemplo($event)">
-        <option value="">Exemplos da aula…</option>
+      <select class="exec-select" aria-label="Exemplo" [ngModel]="exemplo()" (ngModelChange)="carregarExemplo($event)">
+        <option value="">Exemplos…</option>
         @for (e of exemplos; track e.id) { <option [value]="e.id">{{ e.nome }}</option> }
       </select>
       <button type="button" class="exec-btn" (click)="tabela.abrir()" title="Tabela de instruções"><i class="fa-solid fa-book-open"></i> Instruções</button>
@@ -75,7 +75,7 @@
         </div>
         @if (cpp()) {
           @if (traducao()?.nivel === 'direto') {
-            <p class="nota">Não foi possível montar o C++ no estilo das aulas para este programa (ex.: desvios fora dos padrões de if/for/while ou sub-rotina com CALL): o C++ foi traduzido instrução por instrução.</p>
+            <p class="nota">Não foi possível montar o C++ com if/for/while para este programa (ex.: desvios fora dos padrões de if/for/while ou sub-rotina com CALL): o C++ foi traduzido instrução por instrução.</p>
           }
           <pre class="cpp">{{ cpp() }}</pre>
         } @else {

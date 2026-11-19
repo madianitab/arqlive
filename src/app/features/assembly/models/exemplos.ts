@@ -1,6 +1,5 @@
 /**
- * Programas de exemplo do simulador, tirados da Aula 14 de ArqII ("Do C++ ao Assembly").
- * Acréscimos em relação ao slide estão comentados no próprio código.
+ * Programas de exemplo do simulador.
  */
 export interface ExemploAssembly {
   id: string;

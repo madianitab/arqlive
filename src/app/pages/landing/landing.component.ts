@@ -55,9 +55,9 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
       <section class="scene" data-i="0">
         <div class="scene-inner">
           <h1 class="hero-title">Arq<b>Live</b><span class="cursor"></span></h1>
-          <p class="hero-tagline">o computador, <em>por dentro</em>.<br>escreva assembly e veja a CPU executar, passo a passo.</p>
+          <p class="hero-tagline">o computador, <em>por dentro</em>.<br>do código em C às instruções da CPU: simule, traduza e pratique.</p>
           <div class="hero-cta">
-            <os-button variant="p" size="lg" [glow]="true" (click)="go('/simulacoes')">Explorar Simulações</os-button>
+            <os-button variant="p" size="lg" [glow]="true" (click)="go('/simulacoes')">Explorar o laboratório</os-button>
           </div>
           <div class="hero-term"><span class="p">aluno&#64;arqlive</span><span class="d">:~$</span> executar programa.asm</div>
         </div>
@@ -85,12 +85,12 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
         </div>
       </section>
 
-      <!-- CENA 2 — SIMULADORES -->
+      <!-- CENA 2 — LABORATÓRIO -->
       <section class="scene" data-i="2">
         <div class="scene-inner">
-          <div class="section-idx">02 — Simulador</div>
+          <div class="section-idx">02 — Laboratório</div>
           <h2 class="section-title">Aprenda fazendo</h2>
-          <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4 tw-mt-8 scene-deck">
+          <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-4 tw-mt-8 scene-deck">
             <a class="deck-link" href="#/assembly/simulador" (click)="go('/assembly/simulador'); $event.preventDefault()">
               <os-card title="Simulador de Assembly">
                 <os-card-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg></os-card-icon>
@@ -109,8 +109,14 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
                 Escreva em C ou Arduino e veja o Assembly simplificado correspondente.
               </os-card>
             </a>
+            <a class="deck-link" href="#/assembly/exercicios" (click)="go('/assembly/exercicios'); $event.preventDefault()">
+              <os-card title="Exercícios">
+                <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></os-card-icon>
+                Escreva o assembly, responda e confira na hora.
+              </os-card>
+            </a>
           </div>
-          <div class="tw-mt-6"><a class="see-all" routerLink="/simulacoes">ver todas as simulações →</a></div>
+          <div class="tw-mt-6"><a class="see-all" routerLink="/simulacoes">ver tudo no laboratório →</a></div>
         </div>
       </section>
 
@@ -118,7 +124,7 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
       <section class="scene scene-cta" data-i="3">
         <div class="scene-inner">
           <span class="cta-rule"></span>
-          <h2 class="cta-title">Pronto pra simular?</h2>
+          <h2 class="cta-title">Pronto pra começar?</h2>
           <p class="cta-sub">Escreva um programa e veja a CPU trabalhar.</p>
           <os-button variant="p" size="lg" [glow]="true" (click)="go('/simulacoes')">Começar agora</os-button>
           <div class="cta-foot">ArqLive · Arquitetura de Computadores · {{ year }}</div>
@@ -151,7 +157,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly steps: { kind: SceneKind; label: string }[] = [
     { kind: 'zoom',    label: 'Início' },
     { kind: 'slideX',  label: 'Aprender' },
-    { kind: 'slideUp', label: 'Simular' },
+    { kind: 'slideUp', label: 'Praticar' },
     { kind: 'zoom',    label: 'Começar' },
   ];
 

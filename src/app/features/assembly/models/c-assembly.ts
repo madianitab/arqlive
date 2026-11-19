@@ -1,8 +1,7 @@
 /**
  * Tradutor C → Assembly simplificado (lógica pura, sem Angular).
  *
- * Recebe um trecho em C/C++ (PC ou Arduino), no estilo das aulas, e devolve o Assembly
- * simplificado correspondente, como nas respostas dos slides (Aulas 14 e 15 de ArqII):
+ * Recebe um trecho em C/C++ (PC ou Arduino) e devolve o Assembly simplificado correspondente:
  *
  *   int X = 5;  X = X + 2;          →   X: 5 / LOAD R1, X / ADD R1, 2 / STORE X, R1
  *   if (B == 2) { A = B; }          →   CMP R1, 2 / JNE FIM / STORE A, R1 / FIM:
@@ -14,10 +13,10 @@
  *   vai direto para a memória; sem valor, a variável fica vazia.
  * - Expressões são calculadas da esquerda para a direita num registrador (R1, R2…); constantes
  *   entram direto na instrução (ADD R1, 2). O resultado volta para a memória com STORE.
- * - O tradutor lembra qual variável está em cada registrador e reaproveita (como no slide:
- *   X = X + Y; Y++  →  o Y que já está em R2 é usado no Y++).
+ * - O tradutor lembra qual variável está em cada registrador e reaproveita:
+ *   X = X + Y; Y++  →  o Y que já está em R2 é usado no Y++.
  * - Num laço, as variáveis usadas ficam presas em registradores: são lidas antes do laço e
- *   gravadas depois dele (como no slide do for com soma).
+ *   gravadas depois dele.
  * - O salto testa a condição contrária à do C (if com == → JNE; i <= 4 → JG FIM).
  * - printf("X = %d", X) → TEXTO: "X = " / CALL imprime / LOAD R1, X / OUT TELA, R1.
  */
@@ -102,7 +101,7 @@ function tokenizar(fonte: string): Token[] {
     }
     inicioLinha = false;
     const ini = i;
-    const add = (t: TipoToken, v: string, extra: Partial<Token> = {}) => toks.push({ t, v, linha, ini, fim: i, ...extra });
+    const add = (t: TipoToken, v: string, mais: Partial<Token> = {}) => toks.push({ t, v, linha, ini, fim: i, ...mais });
 
     if (/\d/.test(c)) {
       const m = fonte.slice(i).match(/^(0x[0-9a-fA-F]+|0b[01]+|\d+)([uUlL]*)/)!;
@@ -1189,7 +1188,7 @@ class Gerador {
           continue;
         }
         this.emitir('CALL imprime', `exibe o texto "${t}"`);
-        // como no slide: depois do CALL, o valor é lido da memória de novo
+        // depois do CALL, o valor é lido da memória de novo
         REGS.forEach(r => !this.preso.has(r) && this.cache.get(r)!.clear());
       } else {
         const o = this.registrador(this.valor(p.e));
@@ -1287,7 +1286,7 @@ class Gerador {
 
   private laco(texto: string, corpo: Cmd, cond: Expr | undefined, init: Cmd | undefined, passo: Cmd | undefined, tipo: 'for' | 'while' | 'do'): void {
     const cab = this.cabecalho;
-    // variável declarada no for (int i = 1): vai para a memória com o valor inicial, como no slide
+    // variável declarada no for (int i = 1): vai para a memória com o valor inicial
     let declFor: string | null = null;
     let initVar: { nome: string; valor: Expr } | null = null;
     if (init?.k === 'decl' && init.itens.length === 1 && init.itens[0].tamanho === null && init.itens[0].init) {
@@ -1303,7 +1302,7 @@ class Gerador {
       this.comando(init);
     }
 
-    // variáveis do laço presas em registradores: lidas antes, gravadas depois (slide do for com soma)
+    // variáveis do laço presas em registradores: lidas antes, gravadas depois
     const todos: Cmd = { k: 'bloco', corpo: passo ? [corpo, passo] : [corpo], linha: 0, texto: '' };
     const usadas = varsDe(todos, varsDe(cond));
     const escritas = escritasDe(todos);
@@ -1395,7 +1394,7 @@ class Gerador {
 
   /**
    * STORE X seguido de outro STORE X, sem ninguém ler X no meio (e sem rótulos ou saltos):
-   * o primeiro é desnecessário (slide: int D = T - L; D = D * 2 → um STORE só).
+   * o primeiro é desnecessário (int D = T - L; D = D * 2 → um STORE só).
    */
   private eliminarStoresRepetidos(): void {
     for (let i = 0; i < this.linhas.length; i++) {
@@ -1447,7 +1446,7 @@ class Gerador {
 
 // ─────────────────────────── entrada ───────────────────────────
 
-/** Traduz um código em C/C++ (PC ou Arduino) para o Assembly simplificado das aulas. */
+/** Traduz um código em C/C++ (PC ou Arduino) para o Assembly simplificado. */
 export function traduzirParaAssembly(fonte: string, opcoes: OpcoesTraducao = {}): ResultadoTraducao {
   try {
     if (!fonte.trim()) return { codigo: '', erros: [], avisos: [], arduino: false };

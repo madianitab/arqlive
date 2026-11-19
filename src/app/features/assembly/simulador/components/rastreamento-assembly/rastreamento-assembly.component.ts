@@ -4,7 +4,7 @@ import { LIMITE_EXERCICIO, LIMITE_RASTREAMENTO, SimuladorAssemblyService } from 
 import { ColunaRastreamento, LinhaRastreamento } from 'src/app/features/assembly/models/rastreamento';
 
 /**
- * Tabela de rastreamento (slides 15/16 da Aula 14 e 18/19 da Aula 15): uma linha por instrução.
+ * Tabela de rastreamento: uma linha por instrução.
  * "Acompanhar" preenche a tabela junto com a execução; "Exercício" deixa o aluno preencher e conferir.
  */
 @Component({

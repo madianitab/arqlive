@@ -2,13 +2,14 @@
 
 > Para alterar o projeto, leia também o [Guia de desenvolvimento](GUIA_DESENVOLVIMENTO.md): padrões, design system, convenções conceituais e fluxo de entrega.
 
-Simulador didático de Arquitetura e Organização de Computadores. O aluno escreve um programa no Assembly simplificado das aulas (PC e Arduino) e acompanha a execução, passo a passo: ciclo de instrução (busca, decodificação e execução), registradores (PC, IR, MAR, MDR, SP, R0 a R7), ULA, flags Z/N/C, memória, portas de I/O (LED, botão, sensor) e tela.
+Simulador didático de Arquitetura e Organização de Computadores. O aluno escreve um programa no Assembly simplificado (PC e Arduino) e acompanha a execução, passo a passo: ciclo de instrução (busca, decodificação e execução), registradores (PC, IR, MAR, MDR, SP, R0 a R7), ULA, flags Z/N/C, memória, portas de I/O (LED, botão, sensor) e tela.
 
 | Assunto | Modo | Rota | Pasta |
 |---|---|---|---|
 | Assembly | Simulador de Assembly (passo a passo) | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
 | Assembly | Executor Assembly (executa e mostra o resultado e o C++ equivalente) | `#/assembly/executor` | `src/app/features/assembly/executor` |
 | Assembly | Tradutor C → Assembly (escreve em C/C++ e vê o Assembly simplificado correspondente) | `#/assembly/tradutor` | `src/app/features/assembly/tradutor` |
+| Assembly | Exercícios (escreve o assembly ou o C, responde às perguntas e confere) | `#/assembly/exercicios` | `src/app/features/assembly/exercicios` |
 
 Em cada assunto, `models/` e `services/` ficam na raiz da pasta e são compartilhados entre os modos.
 
@@ -16,7 +17,7 @@ Aplicação Angular 18, sem backend: tudo roda no navegador.
 
 ## O assembly do simulador
 
-É o **Assembly simplificado** das aulas de Arquitetura II (Aula 14, "Do C++ ao Assembly"), no modelo RISC do AVR do Arduino: só `LOAD` e `STORE` acessam a memória, e a ULA trabalha com registradores e constantes. **O destino vem sempre primeiro**, inclusive em `OUT porta, R1`.
+É o **Assembly simplificado** do ArqLive, no modelo RISC do AVR do Arduino: só `LOAD` e `STORE` acessam a memória, e a ULA trabalha com registradores e constantes. **O destino vem sempre primeiro**, inclusive em `OUT porta, R1`.
 
 ```asm
 ; main(){ int X = 5; X = X + 2; printf("X = %d", X); }
@@ -42,17 +43,17 @@ HALT               ; encerra o programa
 | `LOAD R1, X` | lê da memória (ou uma constante) para R1 | `R1 = X;` `R1 = 1;` |
 | `STORE X, R1` | grava R1 na memória, em X | `X = R1;` |
 | `MOV R2, R1` | copia entre registradores | `R2 = R1;` |
-| `ADD` / `SUB` / `MUL R1, R2` | calcula na ULA, guarda em R1 e atualiza as flags | `R1 = R1 + R2;` |
+| `ADD` / `SUB` / `MUL` / `DIV R1, R2` | calcula na ULA, guarda em R1 e atualiza as flags (`DIV`: divisão inteira) | `R1 = R1 + R2;` |
 | `CMP R1, R2` | compara (R1 − R2, sem guardar) e atualiza as flags Z, N e C | `if (R1 == R2)` |
 | `JMP` / `JE` / `JNE ROTULO` | muda o PC: sempre / se igual / se diferente | `if`, `for`, `while` |
-| `JG` / `JGE ROTULO` | muda o PC: se maior / se maior ou igual (Aula 15) | `if (a > b)`, `if (a >= b)` |
+| `JG` / `JGE` / `JL` / `JLE ROTULO` | muda o PC: se maior / maior ou igual / menor / menor ou igual | `if (a > b)`, `if (a <= b)`… |
 | `IN R1, BOTAO` | lê um pino ou sensor (`BOTAO`, `A0`…`A5`, número do pino) | `R1 = digitalRead(p);` |
 | `OUT LED, R1` | envia R1 para a porta (`LED` = pino 13, `TELA`, número do pino ou `OUT R2, R3`) | `digitalWrite(p, R1);` |
 | `DELAY 1000` | pausa em ms | `delay(1000);` |
 | `CALL imprime` | exibe na TELA a variável `TEXTO` | `printf(...)` |
+| `CALL rótulo` / `RET` | chama uma sub-rotina e volta (usa a pilha, SP) | função |
+| `NOP` | não faz nada | `;` |
 | `HALT` | encerra o programa | |
-
-**Acréscimos do simulador** (não estão nos slides): `DIV`, `JL`, `JLE`, `CALL rótulo` / `RET` com pilha (SP) e `NOP`.
 
 - **Registradores:** `R0` a `R7`; **UC:** PC, IR, MAR, MDR e SP; **flags:** Z (zero), N (negativo) e C (carry, “empresta 1”).
 - **Memória:** `X: 5`, `Y: vazio` (ou só `Y`), vetor `LED: 8, 9, 10` (acesso `LED[R1]`), texto `TEXTO: "X = "`; também `X: 10 e Y: 20`.
@@ -61,14 +62,22 @@ HALT               ; encerra o programa
 
 ## Tabela de rastreamento
 
-No Simulador de Assembly, abaixo da execução, a **tabela de rastreamento** das atividades dos slides (Aula 14, slides 15 e 16; Aula 15, slides 18 e 19): uma linha por instrução executada, com PC, IR, os registradores usados, as variáveis na memória, "Usou a ULA?", as flags Z, N e C, os pinos em HIGH (se houver) e o próximo PC, sempre com os valores **depois** da instrução.
+No Simulador de Assembly, abaixo da execução, a **tabela de rastreamento**: uma linha por instrução executada, com PC, IR, os registradores usados, as variáveis na memória, "Usou a ULA?", as flags Z, N e C, os pinos em HIGH (se houver) e o próximo PC, sempre com os valores **depois** da instrução.
 
 - **Acompanhar:** a tabela é preenchida junto com a execução, destacando a instrução atual.
 - **Exercício:** PC e IR vêm prontos; o aluno preenche o resto, clica em **Conferir** (células certas em verde, erradas em vermelho, com o placar) e pode **mostrar a resposta**. Até 30 instruções.
 
+## Exercícios
+
+Exercícios agrupados por assunto (memória e contas, desvios e flags, laços, Arduino, assembly → C): traduzir C → assembly, assembly → C, prever flags e responder a perguntas ("quais instruções usam a ULA?", "quanto vale soma no final?"). O aluno clica em **Conferir** (ou Ctrl + Enter) e vê o que está certo e o que está errado; **Ver resposta** mostra uma resposta certa.
+
+A conferência **não compara o texto**: executa a resposta do aluno e a de referência e compara o resultado (valores finais das variáveis, TELA, sequência de LEDs e tempo de DELAY). Assim, uma solução com outros registradores também está certa. Nos exercícios de Arduino, confere cada valor de entrada (ex.: BOTAO = 0 e BOTAO = 1). Quando o enunciado pede instruções ("use SUB"), confere se foram usadas. No assembly → C, o C do aluno passa pelo tradutor e é executado.
+
+Os exercícios ficam em `src/app/features/assembly/models/exercicios.ts`; para criar um novo, basta acrescentar um item na lista `EXERCICIOS`.
+
 ## Tradutor C → Assembly
 
-O aluno escreve em C/C++ (PC ou Arduino) e vê, ao lado, o Assembly simplificado correspondente, no estilo das respostas dos slides (Aulas 14 e 15). A tradução é refeita a cada tecla, o assembly é executado no simulador para mostrar o resultado, e o botão **Abrir no executor** leva o código para o Executor.
+O aluno escreve em C/C++ (PC ou Arduino) e vê, ao lado, o Assembly simplificado correspondente. A tradução é refeita a cada tecla, o assembly é executado no simulador para mostrar o resultado, e o botão **Abrir no executor** leva o código para o Executor.
 
 ```c
 int soma = 0;                         soma: 0

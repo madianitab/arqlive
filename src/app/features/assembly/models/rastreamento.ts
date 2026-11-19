@@ -1,7 +1,6 @@
 /**
- * Tabela de rastreamento da execução (lógica pura, sem Angular), como nas atividades dos slides
- * (Aula 14, slides 15 e 16; Aula 15, slides 18 e 19): uma linha por instrução executada, com o
- * valor de cada coluna DEPOIS da instrução.
+ * Tabela de rastreamento da execução (lógica pura, sem Angular): uma linha por instrução
+ * executada, com o valor de cada coluna DEPOIS da instrução.
  *
  *   PC | IR (instrução) | R1 | X na memória | Usou a ULA? | Z | N | C | Próximo PC
  *

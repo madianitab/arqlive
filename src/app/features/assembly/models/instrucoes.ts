@@ -1,6 +1,5 @@
 /**
- * Conjunto de instruções do "Assembly simplificado" do ArqLive
- * (padrão das aulas de Arquitetura II — Aula 14, "Do C++ ao Assembly").
+ * Conjunto de instruções do "Assembly simplificado" do ArqLive.
  *
  * Regra: o destino vem sempre primeiro (inclusive em OUT porta, R1).
  * Arquitetura RISC, como o AVR do Arduino: LOAD/STORE acessam a memória;
@@ -45,8 +44,6 @@ export interface DefInstrucao {
   /** A instrução usa a ULA? */
   ula: boolean;
   grupo: Grupo;
-  /** Instrução que não está no slide da aula (acréscimo do simulador). */
-  extra?: boolean;
 }
 
 export const INSTRUCOES: DefInstrucao[] = [
@@ -57,7 +54,7 @@ export const INSTRUCOES: DefInstrucao[] = [
   { op: 'ADD', outros: ['ADD R1, 2'], apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'ADD R1, R2', descricao: 'a ULA soma e guarda em R1; atualiza as flags', cpp: 'R1 = R1 + R2;', ula: true, grupo: 'ULA' },
   { op: 'SUB', outros: ['SUB R1, 1'], apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'SUB R1, R2', descricao: 'a ULA subtrai e guarda em R1; atualiza as flags', cpp: 'R1 = R1 - R2;', ula: true, grupo: 'ULA' },
   { op: 'MUL', outros: ['MUL R1, 3'], apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'MUL R1, R2', descricao: 'a ULA multiplica e guarda em R1; atualiza as flags', cpp: 'R1 = R1 * R2;', ula: true, grupo: 'ULA' },
-  { op: 'DIV', outros: ['DIV R1, 2'], apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'DIV R1, R2', descricao: 'a ULA divide (divisão inteira) e guarda em R1; atualiza as flags', cpp: 'R1 = R1 / R2;', ula: true, grupo: 'ULA', extra: true },
+  { op: 'DIV', outros: ['DIV R1, 2'], apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'DIV R1, R2', descricao: 'a ULA divide (divisão inteira) e guarda em R1; atualiza as flags', cpp: 'R1 = R1 / R2;', ula: true, grupo: 'ULA' },
 
   { op: 'CMP', outros: ['CMP R1, 3'], apelidos: [], operandos: ['reg', 'regOuConst'], uso: 'CMP R1, R2', descricao: 'compara (R1 − R2, sem guardar) e atualiza as flags Z, N e C', cpp: 'if (R1 == R2)', ula: true, grupo: 'Comparação e desvio' },
   { op: 'JMP', apelidos: [], operandos: ['rotulo'], uso: 'JMP ROTULO', descricao: 'muda o PC sempre', cpp: 'goto (for, while)', ula: false, grupo: 'Comparação e desvio' },
@@ -65,16 +62,16 @@ export const INSTRUCOES: DefInstrucao[] = [
   { op: 'JNE', apelidos: ['JNZ'], operandos: ['rotulo'], uso: 'JNE ROTULO', descricao: 'muda o PC se for diferente (Z = 0)', cpp: 'if (!=)', ula: false, grupo: 'Comparação e desvio' },
   { op: 'JG', apelidos: [], operandos: ['rotulo'], uso: 'JG ROTULO', descricao: 'muda o PC se for maior (Z = 0 e N = 0)', cpp: 'if (>)', ula: false, grupo: 'Comparação e desvio' },
   { op: 'JGE', apelidos: [], operandos: ['rotulo'], uso: 'JGE ROTULO', descricao: 'muda o PC se for maior ou igual (N = 0)', cpp: 'if (>=)', ula: false, grupo: 'Comparação e desvio' },
-  { op: 'JL', apelidos: [], operandos: ['rotulo'], uso: 'JL ROTULO', descricao: 'muda o PC se for menor (N = 1)', cpp: 'if (<)', ula: false, grupo: 'Comparação e desvio', extra: true },
-  { op: 'JLE', apelidos: [], operandos: ['rotulo'], uso: 'JLE ROTULO', descricao: 'muda o PC se for menor ou igual (N = 1 ou Z = 1)', cpp: 'if (<=)', ula: false, grupo: 'Comparação e desvio', extra: true },
+  { op: 'JL', apelidos: [], operandos: ['rotulo'], uso: 'JL ROTULO', descricao: 'muda o PC se for menor (N = 1)', cpp: 'if (<)', ula: false, grupo: 'Comparação e desvio' },
+  { op: 'JLE', apelidos: [], operandos: ['rotulo'], uso: 'JLE ROTULO', descricao: 'muda o PC se for menor ou igual (N = 1 ou Z = 1)', cpp: 'if (<=)', ula: false, grupo: 'Comparação e desvio' },
 
   { op: 'IN', outros: ['IN R1, A0', 'IN R1, 7'], apelidos: [], operandos: ['reg', 'portaEntrada'], uso: 'IN R1, BOTAO', descricao: 'lê um pino ou sensor para o registrador', cpp: 'R1 = digitalRead(botao);  R1 = analogRead(A0);', ula: false, grupo: 'Entrada e saída (portas)' },
   { op: 'OUT', outros: ['OUT TELA, R1', 'OUT 8, R1', 'OUT R2, R3'], apelidos: [], operandos: ['portaSaida', 'reg'], uso: 'OUT LED, R1', descricao: 'envia o valor do registrador para a porta de saída', cpp: 'digitalWrite(led, R1);  printf("%d", R1);', ula: false, grupo: 'Entrada e saída (portas)' },
   { op: 'DELAY', outros: ['DELAY R1'], apelidos: [], operandos: ['regOuConst'], uso: 'DELAY 1000', descricao: 'pausa (em milissegundos)', cpp: 'delay(1000);', ula: false, grupo: 'Entrada e saída (portas)' },
 
   { op: 'CALL', outros: ['CALL ROTINA'], apelidos: [], operandos: ['rotulo'], uso: 'CALL imprime', descricao: 'chama uma sub-rotina (CALL imprime exibe o TEXTO da memória)', cpp: 'printf(...);', ula: false, grupo: 'Controle' },
-  { op: 'RET', apelidos: [], operandos: [], uso: 'RET', descricao: 'volta da sub-rotina (o PC recebe o endereço guardado na pilha)', cpp: 'return;', ula: false, grupo: 'Controle', extra: true },
-  { op: 'NOP', apelidos: [], operandos: [], uso: 'NOP', descricao: 'não faz nada', cpp: ';', ula: false, grupo: 'Controle', extra: true },
+  { op: 'RET', apelidos: [], operandos: [], uso: 'RET', descricao: 'volta da sub-rotina (o PC recebe o endereço guardado na pilha)', cpp: 'return;', ula: false, grupo: 'Controle' },
+  { op: 'NOP', apelidos: [], operandos: [], uso: 'NOP', descricao: 'não faz nada', cpp: ';', ula: false, grupo: 'Controle' },
   { op: 'HALT', apelidos: ['HLT'], operandos: [], uso: 'HALT', descricao: 'encerra o programa', cpp: 'return 0;', ula: false, grupo: 'Controle' },
 ];
 

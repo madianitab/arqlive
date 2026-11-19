@@ -17,7 +17,7 @@ import { ThemeService } from '../../core/theme.service';
 
       <nav class="os-tb-nav">
         <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Início</a>
-        <a routerLink="/simulacoes" routerLinkActive="active">Simulações</a>
+        <a routerLink="/simulacoes" routerLinkActive="active">Laboratório</a>
         <a class="os-tb-ds" routerLink="/brandkit" routerLinkActive="active">Design System</a>
       </nav>
 

@@ -1,6 +1,6 @@
 <div class="sim-config">
   <os-panel title="Programa">
-    <label class="rotulo" for="ex">Exemplo da aula</label>
+    <label class="rotulo" for="ex">Exemplo</label>
     <select id="ex" class="form-control" [ngModel]="sim.exemplo()" (ngModelChange)="sim.carregarExemplo($event)">
       @if (!sim.exemplo()) { <option value="">Código próprio</option> }
       @for (e of sim.exemplos; track e.id) { <option [value]="e.id">{{ e.nome }}</option> }

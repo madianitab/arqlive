@@ -17,7 +17,7 @@ main(){
 }
 `;
 
-/** Tradutor C → Assembly simplificado: escreve em C e vê o assembly das aulas (e o resultado). */
+/** Tradutor C → Assembly simplificado: escreve em C e vê o Assembly simplificado (e o resultado). */
 @Component({
   selector: 'app-tradutor-c',
   templateUrl: './tradutor-c.component.html',

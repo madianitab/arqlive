@@ -76,7 +76,7 @@ describe('Assembly simplificado — execução', () => {
     expect([busca.mar, busca.mdr, busca.ir, busca.pc]).toEqual([0, 'LOAD R1, 2', 'LOAD R1, 2', 1]);
   });
 
-  it('rastreamento do slide 16 (X = X + 2): R1, X e uso da ULA', () => {
+  it('rastreamento de X = X + 2: R1, X e uso da ULA', () => {
     const r = exemplo('x-mais-2');
     const ex = execucoes(r);
     expect(ex.map(p => p.regs.R1)).toEqual([5, 7, 7, 7, 7, 7, 7]);
@@ -94,7 +94,7 @@ describe('Assembly simplificado — execução', () => {
     expect(l2.acessos).toEqual([]);
   });
 
-  it('flags Z, N e C do CMP como na tabela do slide 8', () => {
+  it('flags Z, N e C do CMP conforme o resultado da subtração', () => {
     const flags = (a: number, b: number) => {
       const p = execucoes(simular(`LOAD R1, ${a}\nLOAD R2, ${b}\nCMP R1, R2`))[2];
       return [p.z, p.n, p.c, p.regs.R1];
@@ -104,7 +104,7 @@ describe('Assembly simplificado — execução', () => {
     expect(flags(3, 5)).toEqual([0, 1, 1, 3]);
   });
 
-  it('exemplos do slide: resultados na memória', () => {
+  it('exemplos: resultados na memória', () => {
     expect(varFinal(exemplo('y-igual-x'), 'Y')).toBe(10);
     const xy = exemplo('x-mais-y');
     expect([varFinal(xy, 'X'), varFinal(xy, 'Y')]).toEqual([30, 21]);
@@ -130,7 +130,7 @@ describe('Assembly simplificado — execução', () => {
     expect(ultimo(simular(ex.codigo, { BOTAO: 0 }).passos).pinos[13]).toBeUndefined();
   });
 
-  it('for com LEDs: tabela do slide 38', () => {
+  it('for com LEDs: tabela de execução', () => {
     const r = exemplo('for-leds');
     const cmps = r.passos.filter(p => p.fase === 'execucao' && p.ir === 'CMP R1, 3');
     expect(cmps.map(p => [p.regs.R1, p.z, p.regs.R2])).toEqual([[0, 0, 0], [1, 0, 8], [2, 0, 9], [3, 1, 10]]);
@@ -158,7 +158,7 @@ describe('Assembly simplificado — execução', () => {
     expect(ultimo(r.passos).sp).toBe(14);
   });
 
-  it('constante de caractere (slide 27): ADD R1, \'0\'', () => {
+  it('constante de caractere: ADD R1, \'0\'', () => {
     expect(ultimo(simular("LOAD R1, 7\nADD R1, '0'").passos).regs.R1).toBe(55);
   });
 
