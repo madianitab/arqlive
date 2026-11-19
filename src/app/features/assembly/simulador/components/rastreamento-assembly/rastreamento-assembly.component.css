@@ -1,0 +1,47 @@
+:host { display: block; }
+.rast-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.rast-topo .viz-label { margin: 0; flex: 1; min-width: 200px; }
+.rast-dica { margin: 8px 0; font-size: 13px; color: var(--text-2); }
+.rast-ini { display: inline-block; margin-left: 4px; font-family: var(--f-mono); font-size: 12px; color: var(--text-3); }
+
+.rast-acoes { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.rast-btn {
+  font: inherit; font-size: 13px; font-weight: 600; height: 32px; padding: 0 12px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--text);
+}
+.rast-btn:hover { border-color: var(--text-3); }
+.rast-btn.primario { background: var(--a); border-color: var(--a); color: #fff; }
+.rast-placar {
+  font-family: var(--f-mono); font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+  background: var(--warn-soft, var(--surface-2)); color: var(--text);
+}
+.rast-placar.tudo { background: var(--ok-soft); color: var(--ok-deep, var(--ok)); }
+
+/* a tabela rola sozinha na horizontal (a página não) */
+.rast-wrap { overflow: auto; max-height: 520px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.rast { border-collapse: collapse; width: 100%; font-family: var(--f-mono); font-size: 12.5px; }
+.rast th, .rast td { padding: 5px 10px; border-bottom: 1px solid var(--line-soft); text-align: center; white-space: nowrap; }
+.rast th {
+  position: sticky; top: 0; z-index: 1; background: var(--surface-2); color: var(--text-3);
+  font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; cursor: help;
+}
+.rast .t-ir { text-align: left; }
+.rast td.t-ir code { color: var(--text); }
+.rast td.t-pc { color: var(--text-3); }
+.rast td { color: var(--text); }
+.rast td.nulo { color: var(--text-3); font-style: italic; }
+.rast td.sim { color: var(--a); font-weight: 700; }
+.rast tr.atual td { background: var(--a-soft); }
+.rast tr.atual td:first-child { box-shadow: inset 3px 0 0 var(--a); }
+
+.t-ex { padding: 3px 6px; }
+.t-ex input, .t-ex select {
+  font: inherit; font-size: 12.5px; width: 64px; padding: 3px 6px; text-align: center;
+  border: 1px solid var(--line); border-radius: var(--r-xs); background: var(--surface); color: var(--text);
+}
+.t-ex input:focus, .t-ex select:focus { outline: none; border-color: var(--a); box-shadow: var(--ring); }
+.t-ex select { width: 58px; }
+.t-ex[data-estado="ok"] input, .t-ex[data-estado="ok"] select { border-color: var(--ok); background: var(--ok-soft); }
+.t-ex[data-estado="err"] input, .t-ex[data-estado="err"] select { border-color: var(--err); background: var(--err-soft); }
+.t-resp { display: block; margin-top: 2px; font-size: 11px; color: var(--ok-deep, var(--ok)); }

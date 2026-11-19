@@ -7,6 +7,7 @@ import { SimuladorAssemblyService } from 'src/app/features/assembly/services/sim
 import { Fase, textoValor } from 'src/app/features/assembly/models/assembly';
 import { PINO_LED, REGISTRADORES } from 'src/app/features/assembly/models/instrucoes';
 import { EditorAssemblyComponent } from '../editor-assembly/editor-assembly.component';
+import { RastreamentoAssemblyComponent } from '../rastreamento-assembly/rastreamento-assembly.component';
 
 const ROTULO_FASE: Record<Fase, string> = {
   carga: 'carga', busca: 'busca', decodificacao: 'decodificação', execucao: 'execução', fim: 'fim', erro: 'erro',
@@ -19,7 +20,7 @@ interface Celula { end: number; conteudo: string; nome: string; tipo: 'instrucao
   templateUrl: './area-assembly.component.html',
   styleUrls: ['../../../../../ui/styles/sim-viz.css', './area-assembly.component.css'],
   standalone: true,
-  imports: [OsStatComponent, OsAlertComponent, OsTerminalComponent, OsSimPlayerComponent, EditorAssemblyComponent],
+  imports: [OsStatComponent, OsAlertComponent, OsTerminalComponent, OsSimPlayerComponent, EditorAssemblyComponent, RastreamentoAssemblyComponent],
 })
 export class AreaAssemblyComponent {
   readonly rotuloFase = ROTULO_FASE;
