@@ -1,0 +1,48 @@
+/* Base visual: executor-assembly.component.css (mesma tela limpa). Aqui, só o que é dos exercícios. */
+.exec-btn.ativo { border-color: var(--a); color: var(--a); background: var(--a-soft); }
+
+.enun { margin-bottom: 14px; }
+.enun-topo { display: flex; align-items: center; gap: 8px; }
+.enun-origem { font-family: var(--f-mono); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--a); }
+.enun-feito { font-family: var(--f-mono); font-size: 11px; font-weight: 700; color: var(--ok-deep, var(--ok)); background: var(--ok-soft); padding: 1px 8px; border-radius: 999px; }
+.enun h2 { margin: 4px 0 2px; font-size: 18px; color: var(--text); }
+.enun p { margin: 0 0 10px; font-size: 14px; color: var(--text-2); }
+.enun-rot, .trad-rot {
+  margin: 0 0 6px; font-family: var(--f-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--text-3);
+}
+.enun-codigo ::ng-deep .editor { min-height: 0; max-height: 320px; }
+.enun-usar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; color: var(--text-2); }
+.enun-usar code { font-family: var(--f-mono); font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); }
+.enun-dica-btn { margin-top: 8px; border: none; background: none; padding: 0; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; color: var(--a); }
+.enun-dica { margin: 6px 0 0 !important; padding: 8px 10px; border-radius: var(--r-sm); background: var(--a-soft); font-size: 13px !important; color: var(--text) !important; }
+
+.resp-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.resp-recomecar { border: none; background: none; cursor: pointer; font: inherit; font-size: 12.5px; color: var(--text-3); margin-bottom: 6px; }
+.resp-recomecar:hover { color: var(--err); }
+.exec-editor > app-editor-assembly:last-child { flex: 1; display: flex; flex-direction: column; }
+.exec-editor > app-editor-assembly:last-child ::ng-deep .editor.alto { min-height: 300px; }
+
+.perg { display: grid; gap: 4px; margin-top: 10px; }
+.perg-texto { font-size: 13.5px; color: var(--text); }
+.perg input, .perg select {
+  font: inherit; font-family: var(--f-mono); font-size: 13px; padding: 5px 8px; max-width: 260px;
+  border: 1px solid var(--line); border-radius: var(--r-xs); background: var(--surface); color: var(--text);
+}
+.perg input:focus, .perg select:focus { outline: none; border-color: var(--a); box-shadow: var(--ring); }
+.perg[data-estado="ok"] input, .perg[data-estado="ok"] select { border-color: var(--ok); background: var(--ok-soft); }
+.perg[data-estado="err"] input, .perg[data-estado="err"] select { border-color: var(--err); background: var(--err-soft); }
+.perg-resp { font-size: 12.5px; color: var(--ok-deep, var(--ok)); }
+
+.conf-ok { margin: 0 0 8px; font-weight: 700; color: var(--ok-deep, var(--ok)); background: var(--ok-soft); padding: 8px 10px; border-radius: var(--r-sm); }
+.conf-itens { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.conf-itens li { font-family: var(--f-mono); font-size: 12.5px; color: var(--err-deep, var(--err)); }
+.conf-itens li.ok { color: var(--ok-deep, var(--ok)); }
+.conf-itens i { width: 14px; }
+.nota { margin-top: 10px; }
+
+.exec-status .nav { display: inline-flex; gap: 14px; }
+.exec-status button.st-link { border: none; background: none; cursor: pointer; font: inherit; padding: 0; }
+.exec-status button.st-link:disabled { color: var(--text-3); cursor: default; text-decoration: none; }
+/* no exercício a última seção da lateral não estica */
+.exec-lado .bloco:last-child { flex: 0 0 auto; }

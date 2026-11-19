@@ -22,7 +22,7 @@ Este guia reúne os padrões do projeto. Quem for alterar o ArqLive (pessoa ou a
 src/app/
 ├── core/          tema claro/escuro
 ├── ui/            DESIGN SYSTEM (componentes os-*, tokens.css, styles/) — o mesmo do OSLive
-├── pages/         landing, simulacoes (página com os cards), brandkit (vitrine do design system)
+├── pages/         landing, simulacoes (página "Laboratório" com os cards; a rota continua /simulacoes), brandkit (vitrine do design system)
 └── features/      um assunto por pasta
     └── assembly/
         ├── models/       lógica pura (montador, executor, exemplos), sem Angular → fácil de testar
@@ -30,6 +30,7 @@ src/app/
         ├── simulador/components/   home-, lateral-, area-, editor- e rastreamento-assembly
         ├── executor/components/    executor-assembly (reusa o editor-assembly)
         ├── tradutor/components/    tradutor-c (C → Assembly; reusa o editor-assembly e o CSS do executor)
+        ├── exercicios/components/  exercicios-assembly (exercícios dos slides; reusa o editor-assembly e o CSS do executor)
         └── components/             tabela-instrucoes (janela com todas as instruções, usada nas duas telas)
 ```
 
@@ -94,6 +95,8 @@ O visual vem do design system do OSLive, copiado em `src/app/ui`. A página **`#
   - **Arduino:** `led`/pino 13 → `LED`; `botao` → `BOTAO`; `A0`…`A5` no `analogRead`; `pinMode` e `Serial.begin` não geram instrução; o corpo do `loop()` executa uma vez (aviso). `main()` termina com `HALT`.
   - **Nomes:** o assembly não diferencia maiúsculas de minúsculas, então `x` e `X`, ou nomes reservados (`add`, `r1`), ganham um `_` no fim, com aviso.
   - O `editor-assembly` aceita `linguagem="c"` (destaque de C) e `somenteLeitura`. O botão **Abrir no executor** envia o assembly pelo `state` da navegação; o executor o carrega e executa.
+- **Exercícios** (`#/assembly/exercicios`): lista `EXERCICIOS` em `models/exercicios.ts`, com os exercícios das Aulas 14 e 15 (origem "Aula X · slide Y", enunciado, código dado, resposta do slide em `gabarito`, instruções pedidas em `usar`, variáveis conferidas em `verificar`, valores de entrada em `casos` e `perguntas`). Tipos: `c-para-asm`, `asm-para-c` e `perguntas`. A conferência (`conferirExercicio`) **executa** a resposta do aluno e a do slide e compara: variáveis (sem diferenciar maiúsculas de minúsculas; por padrão todas as da resposta do slide, menos o TEXTO), TELA, sequência de escritas nos pinos e tempo de DELAY, para cada caso de entrada. No `asm-para-c`, o C do aluno passa pelo tradutor. Perguntas: `instrucoes` (conjunto de instruções, em qualquer ordem), `numero`, `simnao` e `bits` (ex.: flags "0, 1, 1"). O progresso ("feito") vale só para a visita.
+- **Nomenclatura das telas:** a página com os cards se chama **Laboratório** (menu, botão "Explorar o laboratório" da tela inicial e título "O que você quer fazer?"), porque reúne simulador, executor, tradutor e exercícios.
 - **Erros de execução:** memória vazia, divisão por zero, índice fora do vetor, pino inválido, pilha cheia/vazia e mais de 2000 instruções (laço infinito).
 - **Sem HALT:** quando o PC passa da última instrução (ex.: o rótulo `FIM:` no fim), o programa termina sem erro.
 - **Exemplos:** os programas de `models/exemplos.ts` são os do slide; acréscimos (como `TEXTO` e `D: vazio`) ficam comentados no código.
@@ -104,7 +107,7 @@ O visual vem do design system do OSLive, copiado em `src/app/ui`. A página **`#
 2. **Serviço:** crie `services/<nome>.service.ts` com `@Injectable()` (sem `providedIn`), guardando o estado em signals.
 3. **Componentes:** crie `home-…`, `lateral-…` e `area-…` no padrão da seção 3.
 4. **Rota:** registre a rota em `app-routing.module.ts`, no grupo do assunto.
-5. **Card:** adicione o card em `pages/simulacoes/simulacoes.component.ts`, com o badge `simulador` (`a`) ou `exercícios` (`s`).
+5. **Card:** adicione o card em `pages/simulacoes/simulacoes.component.ts` (página Laboratório) e na cena 2 da tela inicial (`pages/landing`), com o badge `simulador` (`a`) ou `exercícios` (`s`).
 6. **README:** acrescente uma linha na tabela de módulos do `README.md`.
 7. **Convenções:** se o módulo trouxer uma convenção nova, registre-a na seção 4 deste guia.
 
@@ -116,7 +119,7 @@ npx ng build --base-href /arqlive/         # build de produção sem erros
 npx ng test --watch=false                  # testes unitários (Karma)
 ```
 
-- **Testes unitários:** todos devem passar. O `rastreamento.spec.ts` confere as tabelas dos slides 16 (Aula 14) e 19 (Aula 15) e a conferência das respostas. O `c-assembly.spec.ts` confere as traduções dos slides (instrução por instrução) e executa o assembly gerado para conferir os valores finais. O `assembly.spec.ts` confere a montagem, o ciclo de instrução, as flags (tabela do slide 8), os rastreamentos dos slides 16 e 38 e o resultado de todos os exemplos.
+- **Testes unitários:** todos devem passar. O `exercicios.spec.ts` confere que a resposta de cada slide passa na conferência, que outras soluções corretas também passam e as perguntas. O `rastreamento.spec.ts` confere as tabelas dos slides 16 (Aula 14) e 19 (Aula 15) e a conferência das respostas. O `c-assembly.spec.ts` confere as traduções dos slides (instrução por instrução) e executa o assembly gerado para conferir os valores finais. O `assembly.spec.ts` confere a montagem, o ciclo de instrução, as flags (tabela do slide 8), os rastreamentos dos slides 16 e 38 e o resultado de todos os exemplos.
 - **Navegador:** confira a tela nos temas claro e escuro, sem erros no console, e com **zoom de 150 a 175%** (lateral aberta e recolhida), sem rolagem horizontal na página.
 
 ## 7. Entrega (fluxo da professora)

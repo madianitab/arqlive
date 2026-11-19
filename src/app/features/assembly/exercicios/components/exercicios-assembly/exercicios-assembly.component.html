@@ -1,0 +1,120 @@
+<div class="exec">
+  <header class="exec-bar">
+    <div class="exec-titulo">
+      <h1>Exercícios</h1>
+      <span>Do C++ ao Assembly · Aulas 14 e 15</span>
+    </div>
+    <div class="exec-acoes">
+      <select class="exec-select" aria-label="Exercício" [ngModel]="indice()" (ngModelChange)="escolher($event)">
+        @for (g of grupos(); track g.aula) {
+          <optgroup [label]="g.aula">
+            @for (it of g.itens; track it.e.id) {
+              <option [ngValue]="it.i">{{ feitos().has(it.e.id) ? '✓ ' : '' }}{{ it.e.titulo }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+      <button type="button" class="exec-btn" (click)="tabela.abrir()" title="Tabela de instruções"><i class="fa-solid fa-book-open"></i> Instruções</button>
+      <button type="button" class="exec-btn" [class.ativo]="mostrarResposta()" (click)="mostrarResposta.set(!mostrarResposta())"
+              title="Mostrar a resposta do slide"><i class="fa-solid fa-eye"></i> {{ mostrarResposta() ? 'Esconder resposta' : 'Ver resposta' }}</button>
+      <button type="button" class="exec-btn primario" (click)="conferir()" title="Conferir (Ctrl + Enter)"><i class="fa-solid fa-check"></i> Conferir</button>
+    </div>
+  </header>
+
+  <div class="exec-grid">
+    <section class="exec-editor">
+      <div class="enun">
+        <div class="enun-topo">
+          <span class="enun-origem">{{ ex().origem }}</span>
+          @if (feitos().has(ex().id)) { <span class="enun-feito"><i class="fa-solid fa-check"></i> feito</span> }
+        </div>
+        <h2>{{ ex().titulo }}</h2>
+        <p>{{ ex().enunciado }}</p>
+        <div class="enun-rot">{{ linguagemDada() === 'c' ? 'Código em C' : 'Assembly simplificado' }}</div>
+        <app-editor-assembly class="enun-codigo" [linguagem]="linguagemDada()" [somenteLeitura]="true" [codigo]="ex().codigo"></app-editor-assembly>
+        @if (ex().usar?.length) {
+          <div class="enun-usar"><span>Use:</span> @for (u of ex().usar; track u) { <code>{{ u }}</code> }</div>
+        }
+        @if (ex().dica) {
+          <button type="button" class="enun-dica-btn" (click)="mostrarDica.set(!mostrarDica())">
+            <i class="fa-regular fa-lightbulb"></i> {{ mostrarDica() ? 'Esconder dica' : 'Dica' }}
+          </button>
+          @if (mostrarDica()) { <p class="enun-dica">{{ ex().dica }}</p> }
+        }
+      </div>
+
+      @if (ex().tipo !== 'perguntas') {
+        <div class="resp-topo">
+          <h2 class="trad-rot">Sua resposta ({{ linguagemResposta() === 'c' ? 'código em C' : 'Assembly simplificado' }})</h2>
+          <button type="button" class="resp-recomecar" (click)="recomecar()" title="Apagar a resposta deste exercício"><i class="fa-solid fa-eraser"></i> Recomeçar</button>
+        </div>
+        <app-editor-assembly [alto]="true" [linguagem]="linguagemResposta()" [codigo]="codigo()" (codigoChange)="editar($event)"
+                             (executar)="conferir()" [linhasErro]="linhasErro()"></app-editor-assembly>
+      }
+    </section>
+
+    <aside class="exec-lado">
+      @if (ex().perguntas?.length) {
+        <section class="bloco">
+          <h2>Perguntas</h2>
+          @for (p of ex().perguntas; track p.id) {
+            <label class="perg" [attr.data-estado]="perguntaCerta(p.id) === null ? null : (perguntaCerta(p.id) ? 'ok' : 'err')">
+              <span class="perg-texto">{{ p.texto }}</span>
+              @if (p.tipo === 'simnao') {
+                <select [ngModel]="resposta(p.id)" (ngModelChange)="responder(p.id, $event)">
+                  <option value=""></option><option value="sim">sim</option><option value="não">não</option>
+                </select>
+              } @else {
+                <input type="text" [ngModel]="resposta(p.id)" (ngModelChange)="responder(p.id, $event)" autocomplete="off" spellcheck="false"
+                       [placeholder]="p.tipo === 'instrucoes' ? 'ex.: ADD, JMP' : p.tipo === 'bits' ? 'ex.: 0, 1, 0' : ''" />
+              }
+              @if (mostrarResposta()) { <span class="perg-resp">{{ p.explicacao }}</span> }
+            </label>
+          }
+        </section>
+      }
+
+      <section class="bloco">
+        <h2>Conferência</h2>
+        @if (conferencia(); as c) {
+          @if (c.ok) {
+            <p class="conf-ok"><i class="fa-solid fa-circle-check"></i> Tudo certo!</p>
+          }
+          @for (e of c.erros; track $index) { <p class="erro"><b>{{ e.linha ? 'Linha ' + e.linha : 'Erro' }}:</b> {{ e.msg }}</p> }
+          @if (c.itens.length) {
+            <ul class="conf-itens">
+              @for (it of c.itens; track $index) {
+                <li [class.ok]="it.ok"><i class="fa-solid" [class.fa-check]="it.ok" [class.fa-xmark]="!it.ok"></i> {{ it.texto }}</li>
+              }
+            </ul>
+          }
+          @if (ex().perguntas?.length && !c.ok) {
+            <p class="nota">Perguntas: {{ acertos(c) }} de {{ ex().perguntas?.length }} certas.</p>
+          }
+          @if (!c.ok && ex().tipo !== 'perguntas') {
+            <p class="nota">A conferência executa a sua resposta e a do slide e compara o resultado: memória{{ ex().casos?.length ? ' (para cada valor de entrada)' : '' }}, TELA e portas.</p>
+          }
+        } @else {
+          <p class="vazio">{{ ex().tipo === 'perguntas' ? 'Responda e clique em Conferir.' : 'Escreva a resposta e clique em Conferir (Ctrl + Enter).' }}</p>
+        }
+      </section>
+
+      @if (mostrarResposta() && ex().gabarito) {
+        <section class="bloco">
+          <h2>Resposta do slide</h2>
+          <app-editor-assembly class="enun-codigo" [linguagem]="linguagemResposta()" [somenteLeitura]="true" [codigo]="ex().gabarito!"></app-editor-assembly>
+          @if (ex().tipo === 'c-para-asm') { <p class="nota">Outras respostas também estão certas se o resultado for o mesmo.</p> }
+        </section>
+      }
+    </aside>
+  </div>
+
+  <footer class="exec-status">
+    <span>Exercício {{ indice() + 1 }} de {{ exercicios.length }} · {{ feitos().size }} feito(s)</span>
+    <span class="nav">
+      <button type="button" class="st-link" [disabled]="indice() === 0" (click)="escolher(indice() - 1)">← anterior</button>
+      <button type="button" class="st-link" [disabled]="indice() === exercicios.length - 1" (click)="escolher(indice() + 1)">próximo →</button>
+    </span>
+  </footer>
+</div>
+<app-tabela-instrucoes #tabela></app-tabela-instrucoes>

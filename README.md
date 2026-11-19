@@ -9,6 +9,7 @@ Simulador didático de Arquitetura e Organização de Computadores. O aluno escr
 | Assembly | Simulador de Assembly (passo a passo) | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
 | Assembly | Executor Assembly (executa e mostra o resultado e o C++ equivalente) | `#/assembly/executor` | `src/app/features/assembly/executor` |
 | Assembly | Tradutor C → Assembly (escreve em C/C++ e vê o Assembly simplificado correspondente) | `#/assembly/tradutor` | `src/app/features/assembly/tradutor` |
+| Assembly | Exercícios das Aulas 14 e 15 (escreve o assembly ou o C, responde às perguntas e confere) | `#/assembly/exercicios` | `src/app/features/assembly/exercicios` |
 
 Em cada assunto, `models/` e `services/` ficam na raiz da pasta e são compartilhados entre os modos.
 
@@ -65,6 +66,14 @@ No Simulador de Assembly, abaixo da execução, a **tabela de rastreamento** das
 
 - **Acompanhar:** a tabela é preenchida junto com a execução, destacando a instrução atual.
 - **Exercício:** PC e IR vêm prontos; o aluno preenche o resto, clica em **Conferir** (células certas em verde, erradas em vermelho, com o placar) e pode **mostrar a resposta**. Até 30 instruções.
+
+## Exercícios
+
+Os exercícios das Aulas 14 e 15 ("Do C++ ao Assembly"): traduzir C → assembly, assembly → C (slide 25 da Aula 14), prever flags e responder às perguntas dos slides ("quais instruções usam a ULA?", "quanto vale soma no final?"). O aluno clica em **Conferir** (ou Ctrl + Enter) e vê o que está certo e o que está errado; **Ver resposta** mostra a resposta do slide.
+
+A conferência **não compara o texto**: executa a resposta do aluno e a do slide e compara o resultado (valores finais das variáveis, TELA, sequência de LEDs e tempo de DELAY). Assim, uma solução com outros registradores também está certa. Nos exercícios de Arduino, confere cada valor de entrada (ex.: BOTAO = 0 e BOTAO = 1). Quando o enunciado pede instruções ("use SUB"), confere se foram usadas. No assembly → C, o C do aluno passa pelo tradutor e é executado.
+
+Os exercícios ficam em `src/app/features/assembly/models/exercicios.ts`; para criar um novo, basta acrescentar um item na lista `EXERCICIOS`.
 
 ## Tradutor C → Assembly
 
