@@ -12,6 +12,22 @@ describe('Exercícios (Aulas 14 e 15)', () => {
     });
   });
 
+  it('as respostas usam só instruções dos slides (sem acréscimos)', () => {
+    const acrescimos = /^\s*(?:[A-Za-z_]\w*:\s*)?(DIV|JL|JLE|RET|NOP)\b/im;
+    EXERCICIOS.forEach(e => {
+      const asm = e.tipo === 'asm-para-c' ? e.codigo : e.gabarito ?? '';
+      expect(acrescimos.test(asm)).withContext(e.id).toBeFalse();
+    });
+  });
+
+  it('exercícios novos: troca, if-else, while e assembly → C com laço', () => {
+    expect(conferirExercicio(ex('a14-troca'), 'A: 3\nB: 7\nC\nLOAD R1, A\nLOAD R2, B\nSTORE A, R2\nSTORE B, R1\nSTORE C, R1', {}).ok).toBeTrue();
+    expect(conferirExercicio(ex('a15-asm-para-c-laco'), 'int X = 1;\nfor (int i = 0; i < 3; i++) X = X * 2;', {}).ok).toBeTrue();
+    expect(conferirExercicio(ex('a15-asm-para-c-laco'), 'int X = 1;\nX = X * 2;', {}).ok).toBeFalse();
+    const c = conferirExercicio(ex('a15-sensor'), 'IN R1, A0\nCMP R1, 500\nJGE ACENDE\nJMP FIM\nACENDE: LOAD R2, 1\nOUT LED, R2\nFIM:', respostasCertas('a15-sensor'));
+    expect(c.itens.find(i => i.texto.startsWith('Com A0 = 500'))?.ok).toBeFalse();
+  });
+
   it('aceita outra solução com o mesmo resultado (outros registradores, sem MOV)', () => {
     expect(conferirExercicio(ex('a14-y-igual-x'), 'X: 10\nY\nLOAD R3, X\nSTORE Y, R3', {}).ok).toBeTrue();
     const soma = 'soma: 0\nLOAD R1, 0\nLOAD R2, 1\nL: CMP R2, 4\nJG F\nADD R1, R2\nADD R2, 1\nJMP L\nF: STORE soma, R1';

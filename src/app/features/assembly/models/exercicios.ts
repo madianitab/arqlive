@@ -1,5 +1,6 @@
 /**
- * Exercícios das Aulas 14 e 15 de ArqII ("Do C++ ao Assembly") e a conferência das respostas
+ * Exercícios das Aulas 14 e 15 de ArqII ("Do C++ ao Assembly") — os dos slides ("Aula X · slide Y")
+ * e outros no mesmo estilo ("Aula X · prática"), só com instruções dos slides — e a conferência das respostas
  * (lógica pura, sem Angular).
  *
  * Tipos de exercício:
@@ -161,6 +162,105 @@ STORE B, R2`,
    B = B + A;
 }`,
     dica: 'Siga os registradores: R1 começa com A e R2 com B. O que cada um vale quando é gravado?',
+  },
+  {
+    id: 'a14-troca',
+    origem: 'Aula 14 · prática',
+    titulo: 'Troca: C = A; A = B; B = C',
+    enunciado: 'Escreva o Assembly simplificado. No final, A e B devem estar trocados.',
+    tipo: 'c-para-asm',
+    codigo: `main(){
+   int A = 3, B = 7, C;
+   C = A;
+   A = B;
+   B = C;
+}`,
+    gabarito: `; valores na memória
+A: 3
+B: 7
+C: vazio
+; C = A
+LOAD R1, A
+STORE C, R1
+; A = B
+LOAD R2, B
+STORE A, R2
+; B = C
+STORE B, R1`,
+    dica: 'O valor de A continua em R1 depois do primeiro STORE: dá para usá-lo no B = C.',
+  },
+  {
+    id: 'a14-expressao-parenteses',
+    origem: 'Aula 14 · prática',
+    titulo: 'M = (A + B) * 2 - C',
+    enunciado: 'Escreva o Assembly simplificado.',
+    tipo: 'c-para-asm',
+    codigo: `main(){
+   int A = 5, B = 3, C = 4, M;
+   M = (A + B) * 2 - C;
+}`,
+    gabarito: `; valores na memória
+A: 5
+B: 3
+C: 4
+M: vazio
+; M = (A + B) * 2 - C
+LOAD R1, A
+LOAD R2, B
+ADD R1, R2
+MUL R1, 2
+LOAD R3, C
+SUB R1, R3
+STORE M, R1`,
+    dica: 'Comece pelos parênteses: some A e B num registrador e continue as contas nele.',
+  },
+  {
+    id: 'a14-printf',
+    origem: 'Aula 14 · prática',
+    titulo: 'X = X * X com printf',
+    enunciado: 'Escreva o Assembly simplificado, com a impressão (como no exemplo X = X + 2).',
+    tipo: 'c-para-asm',
+    codigo: `main(){
+   int X = 3;
+   X = X * X;
+   printf("X = %d", X);
+}`,
+    gabarito: `; valores na memória
+X: 3
+TEXTO: "X = "
+; X = X * X
+LOAD R1, X
+MUL R1, R1
+STORE X, R1
+; impressão
+CALL imprime
+LOAD R1, X
+OUT TELA, R1
+HALT`,
+    usar: ['CALL', 'OUT'],
+    dica: 'O texto do printf vai para a variável TEXTO e é exibido com CALL imprime; o valor sai com OUT TELA, R1.',
+  },
+  {
+    id: 'a14-asm-para-c-2',
+    origem: 'Aula 14 · prática',
+    titulo: 'Qual seria o código em C? (2)',
+    enunciado: 'Escreva o código em C que corresponde a este assembly.',
+    tipo: 'asm-para-c',
+    codigo: `; valores na memória
+P: 2
+Q: 9
+
+; código
+LOAD R1, Q
+LOAD R2, P
+SUB R1, R2
+MUL R1, 2
+STORE Q, R1`,
+    gabarito: `main(){
+   int P = 2, Q = 9;
+   Q = (Q - P) * 2;
+}`,
+    dica: 'Acompanhe o R1: começa com Q, perde o P (que está em R2) e depois é multiplicado por 2. Atenção à ordem das contas.',
   },
   {
     id: 'a15-x-vezes-3',
@@ -357,6 +457,205 @@ FIM:`,
     verificar: [],
     dica: 'LOAD R2, LEDS[R1] lê a posição R1 do vetor; OUT R2, R3 usa o pino cujo número está em R2.',
   },
+  {
+    id: 'a15-cmp-iguais',
+    origem: 'Aula 15 · prática',
+    titulo: 'CMP com valores iguais',
+    enunciado: 'Preveja as flags e o salto (R1 = 7 e R2 = 7).',
+    tipo: 'perguntas',
+    codigo: `; R1 = 7 e R2 = 7
+CMP R1, R2
+JNE DIFERENTE`,
+    dica: 'Releia a tabela do CMP: o que acontece com as flags quando R1 = R2?',
+    perguntas: [
+      { id: 'conta', texto: 'Quanto vale R1 − R2?', tipo: 'numero', resposta: '0', explicacao: '7 − 7 = 0 (não é guardado)' },
+      { id: 'flags', texto: 'Quais os valores de Z, N e C? (ex.: 0, 1, 0)', tipo: 'bits', resposta: '100', explicacao: 'Z = 1, N = 0, C = 0' },
+      { id: 'salto', texto: 'O JNE pula para DIFERENTE?', tipo: 'simnao', resposta: 'não', explicacao: 'Não: o JNE só pula quando Z = 0' },
+    ],
+  },
+  {
+    id: 'a15-cmp-maior',
+    origem: 'Aula 15 · prática',
+    titulo: 'CMP com R1 maior',
+    enunciado: 'Preveja as flags e o salto (R1 = 9 e R2 = 4).',
+    tipo: 'perguntas',
+    codigo: `; R1 = 9 e R2 = 4
+CMP R1, R2
+JG  MAIOR`,
+    dica: 'O JG pula quando Z = 0 e N = 0 (tabela do slide 12).',
+    perguntas: [
+      { id: 'conta', texto: 'Quanto vale R1 − R2?', tipo: 'numero', resposta: '5', explicacao: '9 − 4 = 5 (não é guardado)' },
+      { id: 'flags', texto: 'Quais os valores de Z, N e C? (ex.: 0, 1, 0)', tipo: 'bits', resposta: '000', explicacao: 'Z = 0, N = 0, C = 0' },
+      { id: 'salto', texto: 'O JG pula para MAIOR?', tipo: 'simnao', resposta: 'sim', explicacao: 'Sim: Z = 0 e N = 0, então R1 > R2' },
+    ],
+  },
+  {
+    id: 'a15-if-else',
+    origem: 'Aula 15 · prática',
+    titulo: 'if-else',
+    enunciado: 'Escreva o Assembly simplificado. Use CMP, JNE e JMP. Depois, responda.',
+    tipo: 'c-para-asm',
+    codigo: `int N = 7, R;
+if (N == 7) {
+   R = 1;
+} else {
+   R = 0;
+}`,
+    gabarito: `; valores na memória
+N: 7
+R: vazio
+; if (N == 7)
+LOAD R1, N
+CMP R1, 7
+JNE SENAO
+LOAD R2, 1
+STORE R, R2
+JMP FIM
+SENAO:
+LOAD R2, 0
+STORE R, R2
+FIM:`,
+    usar: ['CMP', 'JNE', 'JMP'],
+    dica: 'O JNE leva para o bloco do else; no fim do bloco do if, um JMP pula o else.',
+    perguntas: [
+      { id: 'pula', texto: 'Qual instrução faz o programa pular o bloco do else?', tipo: 'instrucoes', resposta: 'JMP', explicacao: 'JMP FIM, no fim do bloco do if' },
+      { id: 'r', texto: 'Quanto vale R no final?', tipo: 'numero', resposta: '1', explicacao: 'R = 1 (N vale 7)' },
+    ],
+  },
+  {
+    id: 'a15-while-contagem',
+    origem: 'Aula 15 · prática',
+    titulo: 'while: contagem regressiva',
+    enunciado: 'Escreva o Assembly simplificado. Use CMP, JE e JMP. Depois, responda.',
+    tipo: 'c-para-asm',
+    codigo: `int c = 3;
+while (c != 0) {
+   printf("%d\n", c);
+   c--;
+}`,
+    gabarito: `; valores na memória
+c: 3
+LOAD R1, c
+LOOP:  CMP R1, 0
+       JE  FIM
+       OUT TELA, R1
+       SUB R1, 1
+       JMP LOOP
+FIM:   STORE c, R1`,
+    usar: ['CMP', 'JE', 'JMP'],
+    dica: 'O while testa antes de cada volta: o salto sai quando c == 0 (o contrário de c != 0).',
+    perguntas: [
+      { id: 'telas', texto: 'Quantas vezes o OUT TELA é executado?', tipo: 'numero', resposta: '3', explicacao: '3 vezes (3, 2 e 1)' },
+      { id: 'c', texto: 'Quanto vale c no final?', tipo: 'numero', resposta: '0', explicacao: 'c = 0' },
+    ],
+  },
+  {
+    id: 'a15-for-vetor',
+    origem: 'Aula 15 · prática',
+    titulo: 'for: soma de um vetor',
+    enunciado: 'Escreva o Assembly simplificado. Use o vetor com LOAD R, V[R1]. Depois, responda.',
+    tipo: 'c-para-asm',
+    codigo: `int V[] = {4, 6, 5};
+int total = 0;
+for (int i = 0; i < 3; i++)
+    total = total + V[i];`,
+    gabarito: `; valores na memória
+V: 4, 6, 5
+total: 0
+i: 0
+LOAD R1, total
+LOAD R2, i
+LOOP:  CMP R2, 3
+       JGE FIM
+       LOAD R3, V[R2]
+       ADD R1, R3
+       ADD R2, 1
+       JMP LOOP
+FIM:   STORE total, R1`,
+    usar: ['CMP', 'JMP'],
+    verificar: ['total'],
+    dica: 'LOAD R3, V[R2] lê a posição R2 do vetor (endereço de V + R2).',
+    perguntas: [
+      { id: 'voltas', texto: 'Quantas vezes o JMP volta ao início?', tipo: 'numero', resposta: '3', explicacao: '3 vezes' },
+      { id: 'total', texto: 'Quanto vale total no final?', tipo: 'numero', resposta: '15', explicacao: 'total = 4 + 6 + 5 = 15' },
+    ],
+  },
+  {
+    id: 'a15-asm-para-c-laco',
+    origem: 'Aula 15 · prática',
+    titulo: 'Qual seria o código em C? (laço)',
+    enunciado: 'Escreva o código em C (com for) que corresponde a este assembly.',
+    tipo: 'asm-para-c',
+    codigo: `; valores na memória
+X: 1
+i: 0
+
+; código
+LOAD R1, X
+LOAD R2, i
+LOOP:  CMP R2, 3
+       JE  FIM
+       MUL R1, 2
+       ADD R2, 1
+       JMP LOOP
+FIM:   STORE X, R1`,
+    gabarito: `int X = 1;
+for (int i = 0; i < 3; i++)
+    X = X * 2;`,
+    verificar: ['X'],
+    dica: 'R2 é o contador (i) e R1 guarda X. Quantas voltas o laço dá e o que acontece com X em cada uma?',
+  },
+  {
+    id: 'a15-botao-if-else',
+    origem: 'Aula 15 · prática',
+    titulo: 'Botão: acende ou apaga o LED',
+    enunciado: 'Escreva o Assembly simplificado. Use IN, CMP, JNE, JMP e OUT.',
+    tipo: 'c-para-asm',
+    codigo: `if (digitalRead(botao) == HIGH) {
+  digitalWrite(led, HIGH);
+} else {
+  digitalWrite(led, LOW);
+}`,
+    gabarito: `IN  R1, BOTAO
+CMP R1, 1
+JNE APAGA
+LOAD R2, 1
+OUT LED, R2
+JMP FIM
+APAGA:
+LOAD R2, 0
+OUT LED, R2
+FIM:`,
+    usar: ['IN', 'CMP', 'JNE', 'JMP', 'OUT'],
+    casos: [{ BOTAO: 0 }, { BOTAO: 1 }],
+    dica: 'É um if-else: o JNE leva para o bloco que apaga o LED, e um JMP pula esse bloco quando o LED acende.',
+  },
+  {
+    id: 'a15-sensor',
+    origem: 'Aula 15 · prática',
+    titulo: 'Sensor: acende o LED acima de 500',
+    enunciado: 'Escreva o Assembly simplificado. Use IN, CMP, JG, JMP e OUT. Depois, responda.',
+    tipo: 'c-para-asm',
+    codigo: `valor = analogRead(A0);
+if (valor > 500) {
+  digitalWrite(led, HIGH);
+}`,
+    gabarito: `IN  R1, A0
+CMP R1, 500
+JG  ACENDE
+JMP FIM
+ACENDE:
+LOAD R2, 1
+OUT LED, R2
+FIM:`,
+    usar: ['IN', 'CMP', 'OUT'],
+    casos: [{ A0: 300 }, { A0: 500 }, { A0: 800 }],
+    dica: 'Com JG e JMP: o JG vai para o bloco que acende o LED; se não pular, o JMP leva para o fim.',
+    perguntas: [
+      { id: 'pc', texto: 'Quais instruções podem alterar o PC?', tipo: 'instrucoes', resposta: 'JG, JMP', explicacao: 'JG (se valor > 500) e JMP' },
+      { id: 'acende', texto: 'Com o sensor em 500, o LED acende?', tipo: 'simnao', resposta: 'não', explicacao: 'Não: 500 não é maior que 500' },
+    ],
+  },
 ];
 
 // ─────────────────────────── conferência ───────────────────────────
@@ -473,8 +772,13 @@ export function conferirExercicio(ex: Exercicio, codigoAluno: string, respostas:
             : rodAluno.programa.erros));
           break;
         }
+        const rodRef = simular(asmRef, caso);
+        if (rodRef.programa.erros.length || !rodRef.passos.length) {
+          itens.push({ ok: false, texto: 'a resposta de referência deste exercício tem um erro (avise a professora)' });
+          break;
+        }
         const a = resultado(rodAluno);
-        const r = resultado(simular(asmRef, caso));
+        const r = resultado(rodRef);
         const pre = casos.length > 1 ? `Com ${Object.entries(caso).map(([k, v]) => `${k} = ${v}`).join(', ')}: ` : '';
 
         if (a.erro) { itens.push({ ok: false, texto: `${pre}a execução parou com erro — ${a.erro}` }); continue; }

@@ -69,7 +69,7 @@ No Simulador de Assembly, abaixo da execução, a **tabela de rastreamento** das
 
 ## Exercícios
 
-Os exercícios das Aulas 14 e 15 ("Do C++ ao Assembly"): traduzir C → assembly, assembly → C (slide 25 da Aula 14), prever flags e responder às perguntas dos slides ("quais instruções usam a ULA?", "quanto vale soma no final?"). O aluno clica em **Conferir** (ou Ctrl + Enter) e vê o que está certo e o que está errado; **Ver resposta** mostra a resposta do slide.
+Os exercícios das Aulas 14 e 15 ("Do C++ ao Assembly") — os dos slides e outros no mesmo estilo (marcados como "prática"), só com as instruções das aulas: traduzir C → assembly, assembly → C (slide 25 da Aula 14), prever flags e responder às perguntas dos slides ("quais instruções usam a ULA?", "quanto vale soma no final?"). O aluno clica em **Conferir** (ou Ctrl + Enter) e vê o que está certo e o que está errado; **Ver resposta** mostra a resposta do slide.
 
 A conferência **não compara o texto**: executa a resposta do aluno e a do slide e compara o resultado (valores finais das variáveis, TELA, sequência de LEDs e tempo de DELAY). Assim, uma solução com outros registradores também está certa. Nos exercícios de Arduino, confere cada valor de entrada (ex.: BOTAO = 0 e BOTAO = 1). Quando o enunciado pede instruções ("use SUB"), confere se foram usadas. No assembly → C, o C do aluno passa pelo tradutor e é executado.
 
