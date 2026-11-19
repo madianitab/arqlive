@@ -29,6 +29,7 @@ src/app/
         ├── services/     estado da tela (signals)
         ├── simulador/components/   home-, lateral-, area- e editor-assembly
         ├── executor/components/    executor-assembly (reusa o editor-assembly)
+        ├── tradutor/components/    tradutor-c (C → Assembly; reusa o editor-assembly e o CSS do executor)
         └── components/             tabela-instrucoes (janela com todas as instruções, usada nas duas telas)
 ```
 
@@ -83,6 +84,15 @@ O visual vem do design system do OSLive, copiado em `src/app/ui`. A página **`#
 - **`vazio`:** variável sem valor (`D: vazio` ou só `D`); ler (`LOAD`) uma variável vazia é erro de execução.
 - **Tabela de instruções:** botão **Instruções** na barra de ações do Simulador e do Executor (e "Ver todas as instruções" na lateral do Simulador) abre a janela `tabela-instrucoes`, gerada a partir de `instrucoes.ts` (uso, outras formas, descrição, C++, ULA), com busca. Instrução nova aparece lá automaticamente.
 - **Executor de código** (`#/assembly/executor`): tela limpa, sem passo a passo — editor à esquerda; entrada (portas), saída (TELA, memória final, portas) e o **código equivalente em C++** à direita. O C++ é gerado por `models/cpp.ts` **no estilo das aulas, sem registradores**: os registradores guardam expressões, o `STORE` vira atribuição (`D = X + 2;`, `Y++;`), IN/OUT/DELAY viram `digitalRead`/`analogRead`/`digitalWrite`/`delay`, e CMP + desvio viram `if`, `if-else`, `for` (contador que começa numa constante e termina com `ADD R, 1`) ou `while`. Um registrador que leva valor de uma volta do laço para a outra sem passar pela memória (acumulador em registrador, ou o registrador da condição de um `while`) vira uma **variável local** (`int valor = 1;` … `valor = valor * 2;`), como o contador do `for`. O **zero implícito** (registrador usado sem `LOAD`) não aparece nas somas: `ADD R1, 12` → `12`, não `0 + 12`. Formato Arduino (`setup`/`loop`, `led`, `botao`) se o programa usa portas ou DELAY; senão, PC (`main`, `printf`). Se houver desvio fora desses padrões (ou CALL de sub-rotina), usa a tradução direta de `models/cpp-direto.ts` (instrução por instrução, com `goto`) e a tela avisa que não foi possível montar o C++ no estilo das aulas.
+- **Tradutor C → Assembly** (`#/assembly/tradutor`): mesma tela limpa do executor (reusa o CSS dele) — C/C++ à esquerda; assembly gerado (somente leitura), avisos e resultado da execução à direita. A tradução fica em `models/c-assembly.ts` (lógica pura) e segue as respostas dos slides:
+  - **Memória:** valor inicial constante vai direto para a memória (`X: 5`); sem valor, ou declarada dentro de um laço, fica `vazio`; vetores sem valor ficam com zeros. Variável usada só como pino (`int led = 13;`) e `const`/`#define` não vão para a memória (entram direto na instrução).
+  - **Contas:** da esquerda para a direita num registrador (R1, R2…), constantes direto na instrução (`ADD R1, 2`), resultado gravado com `STORE`. O tradutor lembra qual variável está em cada registrador e a reaproveita (`X = X + Y; Y++` → o `ADD R2, 1` usa o Y que já está em R2). Um `STORE X` seguido de outro `STORE X`, sem leitura de X no meio, é removido (slide 24: um `STORE D` só).
+  - **Laços:** as variáveis usadas no laço ficam presas em registradores — lidas antes do rótulo `LOOP`, gravadas depois do `FIM` (slide 15). A variável declarada no `for` (`int i = 1`) vai para a memória com o valor inicial e não é gravada no fim.
+  - **Saltos:** o salto testa a condição contrária à do C (regra do slide 13): `if (B == 2)` → `JNE FIM`; `i <= 4` → `JG FIM`; `i < 3` → `JGE FIM`. Rótulos: `LOOP`, `FIM`, `SENAO`, `PROXIMO` (continue) e `SEGUE` (`||`/`&&`), numerados quando se repetem (`FIM2`).
+  - **printf:** o texto vira a variável `TEXTO` + `CALL imprime`, e cada `%d` vira `OUT TELA` (depois do `CALL`, o valor é lido da memória de novo, como no slide 14). O simulador tem um `TEXTO` só: textos diferentes geram aviso.
+  - **Arduino:** `led`/pino 13 → `LED`; `botao` → `BOTAO`; `A0`…`A5` no `analogRead`; `pinMode` e `Serial.begin` não geram instrução; o corpo do `loop()` executa uma vez (aviso). `main()` termina com `HALT`.
+  - **Nomes:** o assembly não diferencia maiúsculas de minúsculas, então `x` e `X`, ou nomes reservados (`add`, `r1`), ganham um `_` no fim, com aviso.
+  - O `editor-assembly` aceita `linguagem="c"` (destaque de C) e `somenteLeitura`. O botão **Abrir no executor** envia o assembly pelo `state` da navegação; o executor o carrega e executa.
 - **Erros de execução:** memória vazia, divisão por zero, índice fora do vetor, pino inválido, pilha cheia/vazia e mais de 2000 instruções (laço infinito).
 - **Sem HALT:** quando o PC passa da última instrução (ex.: o rótulo `FIM:` no fim), o programa termina sem erro.
 - **Exemplos:** os programas de `models/exemplos.ts` são os do slide; acréscimos (como `TEXTO` e `D: vazio`) ficam comentados no código.
@@ -105,7 +115,7 @@ npx ng build --base-href /arqlive/         # build de produção sem erros
 npx ng test --watch=false                  # testes unitários (Karma)
 ```
 
-- **Testes unitários:** todos devem passar. O `assembly.spec.ts` confere a montagem, o ciclo de instrução, as flags (tabela do slide 8), os rastreamentos dos slides 16 e 38 e o resultado de todos os exemplos.
+- **Testes unitários:** todos devem passar. O `c-assembly.spec.ts` confere as traduções dos slides (instrução por instrução) e executa o assembly gerado para conferir os valores finais. O `assembly.spec.ts` confere a montagem, o ciclo de instrução, as flags (tabela do slide 8), os rastreamentos dos slides 16 e 38 e o resultado de todos os exemplos.
 - **Navegador:** confira a tela nos temas claro e escuro, sem erros no console, e com **zoom de 150 a 175%** (lateral aberta e recolhida), sem rolagem horizontal na página.
 
 ## 7. Entrega (fluxo da professora)

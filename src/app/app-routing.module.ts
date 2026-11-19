@@ -4,6 +4,7 @@ import { LandingComponent } from './pages/landing/landing.component';
 import { SimulacoesComponent } from './pages/simulacoes/simulacoes.component';
 import { BrandkitComponent } from './pages/brandkit/brandkit.component';
 import { ExecutorAssemblyComponent } from './features/assembly/executor/components/executor-assembly/executor-assembly.component';
+import { TradutorCComponent } from './features/assembly/tradutor/components/tradutor-c/tradutor-c.component';
 import { HomeAssemblyComponent } from './features/assembly/simulador/components/home-assembly/home-assembly.component';
 
 const routes: Routes = [
@@ -14,6 +15,7 @@ const routes: Routes = [
   // Assembly
   { path: 'assembly/simulador', component: HomeAssemblyComponent },
   { path: 'assembly/executor', component: ExecutorAssemblyComponent },
+  { path: 'assembly/tradutor', component: TradutorCComponent },
 
   { path: '**', redirectTo: '' },
 ];
