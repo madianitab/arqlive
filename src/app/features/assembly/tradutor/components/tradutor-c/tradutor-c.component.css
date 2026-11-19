@@ -1,0 +1,18 @@
+/* Base visual: executor-assembly.component.css (mesma tela limpa). Aqui, só o que é do tradutor. */
+.trad-rot {
+  margin: 0 0 8px; font-family: var(--f-mono); font-size: 11px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--text-3);
+}
+.exec-btn.ativo { border-color: var(--a); color: var(--a); background: var(--a-soft); }
+.exec-btn:disabled { opacity: .5; cursor: default; filter: none; }
+
+.trad-asm { display: flex; flex-direction: column; flex: 1; }
+.trad-asm app-editor-assembly { display: flex; flex-direction: column; flex: 1; }
+.trad-asm ::ng-deep .editor.alto { min-height: 280px; }
+.trad-asm .bloco-topo { min-height: 34px; }
+.trad-aviso { margin: 8px 0 0; display: flex; gap: 6px; align-items: baseline; }
+.trad-aviso i { color: var(--info); }
+
+.trad-entradas { margin-bottom: 10px; }
+/* no tradutor o bloco de resultado não estica */
+.exec-lado .bloco:last-child { flex: 0 0 auto; }

@@ -1,0 +1,99 @@
+<div class="exec">
+  <header class="exec-bar">
+    <div class="exec-titulo">
+      <h1>Tradutor C → Assembly</h1>
+      <span>C/C++ (PC ou Arduino) → Assembly simplificado</span>
+    </div>
+    <div class="exec-acoes">
+      <select class="exec-select" aria-label="Exemplo da aula" [ngModel]="exemplo()" (ngModelChange)="carregarExemplo($event)">
+        <option value="">Exemplos da aula…</option>
+        @for (e of exemplos; track e.id) { <option [value]="e.id">{{ e.nome }}</option> }
+      </select>
+      <button type="button" class="exec-btn" [class.ativo]="comentarios()" [attr.aria-pressed]="comentarios()" (click)="alternarComentarios()"
+              title="Mostrar ou esconder os comentários do assembly"><i class="fa-regular fa-comment"></i> Comentários</button>
+      <button type="button" class="exec-btn" (click)="tabela.abrir()" title="Tabela de instruções"><i class="fa-solid fa-book-open"></i> Instruções</button>
+      <button type="button" class="exec-btn" (click)="limpar()" title="Apagar o código"><i class="fa-solid fa-eraser"></i> Limpar</button>
+      <button type="button" class="exec-btn primario" [disabled]="!assembly()" (click)="abrirNoExecutor()"
+              title="Abrir o assembly no Executor de código (Ctrl + Enter)"><i class="fa-solid fa-play"></i> Abrir no executor</button>
+    </div>
+  </header>
+
+  <div class="exec-grid">
+    <section class="exec-editor">
+      <h2 class="trad-rot">Código em C/C++ (PC ou Arduino)</h2>
+      <app-editor-assembly linguagem="c" [alto]="true" [codigo]="codigo()" (codigoChange)="editar($event)" (executar)="abrirNoExecutor()"
+                           [linhasErro]="linhasErro()"></app-editor-assembly>
+    </section>
+
+    <aside class="exec-lado">
+      <section class="bloco trad-asm">
+        <div class="bloco-topo">
+          <h2>Assembly simplificado</h2>
+          @if (assembly()) {
+            <button type="button" class="copiar" (click)="copiarAssembly()" [title]="copiado() ? 'Copiado!' : 'Copiar o assembly'">
+              <i [class]="copiado() ? 'fa-solid fa-check' : 'fa-regular fa-copy'"></i>
+            </button>
+          }
+        </div>
+        @if (erros().length) {
+          @for (e of erros(); track $index) { <p class="erro"><b>{{ e.linha ? 'Linha ' + e.linha : 'Erro' }}:</b> {{ e.msg }}</p> }
+        } @else if (assembly()) {
+          <app-editor-assembly [alto]="true" [somenteLeitura]="true" [codigo]="assembly()"></app-editor-assembly>
+          @for (a of avisos(); track $index) { <p class="nota trad-aviso"><i class="fa-solid fa-circle-info"></i> {{ a }}</p> }
+          @for (e of errosMontagem(); track $index) { <p class="erro"><b>Erro do tradutor (linha {{ e.linha }} do assembly):</b> {{ e.msg }}</p> }
+        } @else {
+          <p class="vazio">Escreva o código em C para ver o assembly.</p>
+        }
+      </section>
+
+      <section class="bloco">
+        <h2>Resultado</h2>
+        @if (execucao(); as r) {
+          @if (entradasUsadas().length) {
+            <div class="trad-entradas">
+              @for (p of entradasUsadas(); track p) {
+                <div class="porta">
+                  <span class="porta-nome">{{ p }}</span>
+                  @if (analogica(p)) {
+                    <input type="range" min="0" max="1023" [ngModel]="valorEntrada(p)" (ngModelChange)="definirEntrada(p, $event)" [attr.aria-label]="p" />
+                    <input type="number" class="num" min="0" max="1023" [ngModel]="valorEntrada(p)" (ngModelChange)="definirEntrada(p, $event)" [attr.aria-label]="p + ' (valor)'" />
+                  } @else {
+                    <button type="button" class="toggle" [class.on]="valorEntrada(p) === 1" [attr.aria-pressed]="valorEntrada(p) === 1"
+                            (click)="definirEntrada(p, valorEntrada(p) ? 0 : 1)">{{ valorEntrada(p) }} · {{ valorEntrada(p) ? 'HIGH' : 'LOW' }}</button>
+                  }
+                </div>
+              }
+            </div>
+          }
+          @if (!errosMontagem().length) {
+            <pre class="tela">{{ saida() || '(nada exibido na TELA)' }}</pre>
+            @if (r.erro; as e) { <p class="erro"><b>{{ e.linha ? 'Erro na linha ' + e.linha + ' do assembly' : 'Erro' }}:</b> {{ e.msg }}</p> }
+            @if (memoria().length) {
+              <div class="final">
+                <span class="final-rot">Memória</span>
+                @for (m of memoria(); track m.nome) { <code [class.nulo]="m.vazio">{{ m.nome }} = {{ m.valor }}</code> }
+              </div>
+            }
+            @if (pinos().length) {
+              <div class="final">
+                <span class="final-rot">Portas</span>
+                @for (p of pinos(); track p.nome) { <code [class.ligado]="p.ligado">{{ p.nome }}: {{ p.ligado ? 'HIGH' : 'LOW' }}</code> }
+              </div>
+            }
+          }
+        } @else {
+          <p class="vazio">O resultado da execução do assembly aparece aqui.</p>
+        }
+      </section>
+    </aside>
+  </div>
+
+  <footer class="exec-status">
+    @if (erros().length) { <span class="st-erro">{{ erros().length }} erro(s) no código em C</span> }
+    @else if (!assembly()) { <span>Pronto</span> }
+    @else if (execucao()?.erro) { <span class="st-erro">{{ numInstrucoes() }} instruções · parou com erro após {{ executadas() }}</span> }
+    @else { <span class="st-ok">{{ numInstrucoes() }} instruções · executadas: {{ executadas() }}{{ final()?.tempo ? ' · ' + final()!.tempo + ' ms de DELAY' : '' }}</span> }
+    <a class="st-link" href="#/assembly/simulador">ver passo a passo no simulador →</a>
+  </footer>
+</div>
+<app-tabela-instrucoes #tabela></app-tabela-instrucoes>

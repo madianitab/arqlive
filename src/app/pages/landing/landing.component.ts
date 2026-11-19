@@ -103,6 +103,12 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
                 Escreva o código, clique em Executar e veja o resultado e o equivalente em C++.
               </os-card>
             </a>
+            <a class="deck-link" href="#/assembly/tradutor" (click)="go('/assembly/tradutor'); $event.preventDefault()">
+              <os-card title="Tradutor C → Assembly">
+                <os-card-icon slot="icon" variant="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/></svg></os-card-icon>
+                Escreva em C ou Arduino e veja o Assembly simplificado correspondente.
+              </os-card>
+            </a>
           </div>
           <div class="tw-mt-6"><a class="see-all" routerLink="/simulacoes">ver todas as simulações →</a></div>
         </div>

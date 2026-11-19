@@ -8,6 +8,7 @@ Simulador didático de Arquitetura e Organização de Computadores. O aluno escr
 |---|---|---|---|
 | Assembly | Simulador de Assembly (passo a passo) | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
 | Assembly | Executor de código (executa e mostra o resultado e o C++ equivalente) | `#/assembly/executor` | `src/app/features/assembly/executor` |
+| Assembly | Tradutor C → Assembly (escreve em C/C++ e vê o Assembly simplificado correspondente) | `#/assembly/tradutor` | `src/app/features/assembly/tradutor` |
 
 Em cada assunto, `models/` e `services/` ficam na raiz da pasta e são compartilhados entre os modos.
 
@@ -56,6 +57,29 @@ HALT               ; encerra o programa
 - **Memória:** `X: 5`, `Y: vazio` (ou só `Y`), vetor `LED: 8, 9, 10` (acesso `LED[R1]`), texto `TEXTO: "X = "`; também `X: 10 e Y: 20`.
 - **Constantes:** decimal, `'0'` (código ASCII), `HIGH` e `LOW`. **Rótulos:** `LOOP:`. **Comentários:** `;`.
 - A lista completa está em `src/app/features/assembly/models/instrucoes.ts`.
+
+## Tradutor C → Assembly
+
+O aluno escreve em C/C++ (PC ou Arduino) e vê, ao lado, o Assembly simplificado correspondente, no estilo das respostas dos slides (Aulas 14 e 15). A tradução é refeita a cada tecla, o assembly é executado no simulador para mostrar o resultado, e o botão **Abrir no executor** leva o código para o Executor.
+
+```c
+int soma = 0;                         soma: 0
+for (int i = 1; i <= 4; i++)          i: 1
+    soma = soma + i;                  LOAD R1, soma
+                                      LOAD R2, i
+                                      LOOP:
+                                        CMP R2, 4
+                                        JG FIM
+                                        ADD R1, R2
+                                        ADD R2, 1
+                                        JMP LOOP
+                                      FIM:
+                                      STORE soma, R1
+```
+
+- **Aceita:** `int` (e vetores), `#define`, `const`, `+ - * / %`, `if`/`else`, `for`, `while`, `do-while`, `break`, `continue`, `&&`, `||`, `!`, `printf`/`cout`/`Serial.print`, `digitalWrite`, `digitalRead`, `analogRead`, `delay` e `pinMode`; código solto, `main()` ou `setup()`/`loop()`.
+- **Não aceita:** funções próprias, `float`/`double` (viram inteiros), ponteiros e `switch`.
+- A lógica fica em `src/app/features/assembly/models/c-assembly.ts`; os exemplos, em `models/exemplos-c.ts`.
 
 ## Executar localmente
 

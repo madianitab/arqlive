@@ -38,7 +38,42 @@ export function destacarAssembly(linha: string): string {
   return html;
 }
 
-/** Editor de assembly com números de linha, destaque de sintaxe e linha atual. */
+const PALAVRAS_C = new Set(['int', 'long', 'short', 'char', 'float', 'double', 'void', 'unsigned', 'signed', 'const', 'bool', 'boolean',
+  'byte', 'static', 'if', 'else', 'for', 'while', 'do', 'return', 'break', 'continue', 'using', 'namespace', 'std']);
+const FUNCOES_C = new Set(['printf', 'puts', 'main', 'setup', 'loop', 'digitalWrite', 'digitalRead', 'analogRead', 'pinMode', 'delay',
+  'Serial', 'print', 'println', 'begin', 'cout', 'endl']);
+
+/** Destaca a sintaxe de uma linha de C/C++. */
+export function destacarC(linha: string): string {
+  const span = (cls: string, txt: string) => `<span class="${cls}">${esc(txt)}</span>`;
+  if (/^\s*#/.test(linha)) return span('hl-p', linha);
+  let html = '';
+  let i = 0;
+  while (i < linha.length) {
+    const resto = linha.slice(i);
+    let m: RegExpMatchArray | null;
+    if (resto.startsWith('//')) { html += span('hl-c', resto); break; }
+    if ((m = resto.match(/^\/\*.*?(\*\/|$)/))) { html += span('hl-c', m[0]); i += m[0].length; continue; }
+    if ((m = resto.match(/^\s+/))) { html += m[0]; i += m[0].length; continue; }
+    if ((m = resto.match(/^"(\\.|[^"\\])*"?/))) { html += span('hl-s', m[0]); i += m[0].length; continue; }
+    if ((m = resto.match(/^'(\\.|[^'\\])'?/))) { html += span('hl-n', m[0]); i += m[0].length; continue; }
+    if ((m = resto.match(/^(0x[0-9a-fA-F]+|\d+)\b/))) { html += span('hl-n', m[0]); i += m[0].length; continue; }
+    if ((m = resto.match(/^[A-Za-z_]\w*/))) {
+      const w = m[0];
+      html += PALAVRAS_C.has(w) ? span('hl-k', w)
+        : FUNCOES_C.has(w) ? span('hl-f', w)
+        : /^(HIGH|LOW|OUTPUT|INPUT|true|false|A[0-5]|LED_BUILTIN)$/.test(w) ? span('hl-n', w)
+        : esc(w);
+      i += w.length;
+      continue;
+    }
+    html += esc(linha[i]);
+    i++;
+  }
+  return html;
+}
+
+/** Editor de código (assembly ou C) com números de linha, destaque de sintaxe e linha atual. */
 @Component({
   selector: 'app-editor-assembly',
   standalone: true,
@@ -57,7 +92,8 @@ export function destacarAssembly(linha: string): string {
           }
         </div>
         <textarea rows="1" cols="1" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off"
-                  aria-label="Código assembly" [value]="texto()" (input)="digitar($event)" (keydown)="tecla($event)"></textarea>
+                  [attr.aria-label]="linguagem() === 'c' ? 'Código em C' : 'Código assembly'" [readOnly]="somenteLeitura"
+                  [value]="texto()" (input)="digitar($event)" (keydown)="tecla($event)"></textarea>
       </div>
     </div>
   `,
@@ -69,10 +105,15 @@ export class EditorAssemblyComponent {
   @Input() linhasErro: number[] = [];
   /** Editor alto, ocupando a altura disponível (tela do executor). */
   @Input() alto = false;
+  /** Linguagem do destaque de sintaxe. */
+  readonly linguagem = signal<'assembly' | 'c'>('assembly');
+  @Input('linguagem') set definirLinguagem(v: 'assembly' | 'c') { this.linguagem.set(v); }
+  /** Só exibe o código (ex.: o assembly gerado pelo tradutor). */
+  @Input() somenteLeitura = false;
   @Output() codigoChange = new EventEmitter<string>();
   @Output() executar = new EventEmitter<void>();
 
-  readonly linhas = computed(() => this.texto().split('\n').map(destacarAssembly));
+  readonly linhas = computed(() => this.texto().split('\n').map(this.linguagem() === 'c' ? destacarC : destacarAssembly));
 
   digitar(ev: Event): void {
     const v = (ev.target as HTMLTextAreaElement).value;
@@ -82,6 +123,7 @@ export class EditorAssemblyComponent {
 
   tecla(ev: KeyboardEvent): void {
     const ta = ev.target as HTMLTextAreaElement;
+    if (this.somenteLeitura) return;
     if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
       ev.preventDefault();
       this.executar.emit();

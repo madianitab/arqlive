@@ -1,4 +1,5 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Execucao, Valor, montar, simular, textoValor } from 'src/app/features/assembly/models/assembly';
 import { traduzirCpp, ehArduino } from 'src/app/features/assembly/models/cpp';
@@ -120,6 +121,16 @@ export class ExecutorAssemblyComponent {
     const max = this.analogica(nome) ? 1023 : 1;
     const v = Math.max(0, Math.min(max, Math.round(Number(valor) || 0)));
     this.entradas.update(e => ({ ...e, [nome]: v }));
+  }
+
+  constructor() {
+    // código vindo do Tradutor C → Assembly (botão "Abrir no executor")
+    const st = inject(Router).getCurrentNavigation()?.extras.state as { codigo?: unknown; entradas?: unknown } | undefined;
+    if (typeof st?.codigo === 'string') {
+      this.codigo.set(st.codigo);
+      if (st.entradas && typeof st.entradas === 'object') this.entradas.set({ ...(st.entradas as Record<string, number>) });
+      this.executar();
+    }
   }
 
   copiarCpp(): void {
