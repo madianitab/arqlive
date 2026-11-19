@@ -114,7 +114,7 @@ export class TradutorCComponent {
     }).catch(() => undefined);
   }
 
-  /** Leva o assembly para o Executor de código (que mostra também o C++ equivalente). */
+  /** Leva o assembly para o Executor Assembly (que mostra também o C++ equivalente). */
   abrirNoExecutor(): void {
     if (!this.assembly()) return;
     this.router.navigate(['/assembly/executor'], { state: { codigo: this.assembly(), entradas: this.entradas() } });
