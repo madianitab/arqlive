@@ -63,8 +63,8 @@ export const INSTRUCOES: DefInstrucao[] = [
   { op: 'JMP', apelidos: [], operandos: ['rotulo'], uso: 'JMP ROTULO', descricao: 'muda o PC sempre', cpp: 'goto (for, while)', ula: false, grupo: 'Comparação e desvio' },
   { op: 'JE', apelidos: ['JZ'], operandos: ['rotulo'], uso: 'JE ROTULO', descricao: 'muda o PC se for igual (Z = 1)', cpp: 'if (==)', ula: false, grupo: 'Comparação e desvio' },
   { op: 'JNE', apelidos: ['JNZ'], operandos: ['rotulo'], uso: 'JNE ROTULO', descricao: 'muda o PC se for diferente (Z = 0)', cpp: 'if (!=)', ula: false, grupo: 'Comparação e desvio' },
-  { op: 'JG', apelidos: [], operandos: ['rotulo'], uso: 'JG ROTULO', descricao: 'muda o PC se for maior (Z = 0 e N = 0)', cpp: 'if (>)', ula: false, grupo: 'Comparação e desvio', extra: true },
-  { op: 'JGE', apelidos: [], operandos: ['rotulo'], uso: 'JGE ROTULO', descricao: 'muda o PC se for maior ou igual (N = 0)', cpp: 'if (>=)', ula: false, grupo: 'Comparação e desvio', extra: true },
+  { op: 'JG', apelidos: [], operandos: ['rotulo'], uso: 'JG ROTULO', descricao: 'muda o PC se for maior (Z = 0 e N = 0)', cpp: 'if (>)', ula: false, grupo: 'Comparação e desvio' },
+  { op: 'JGE', apelidos: [], operandos: ['rotulo'], uso: 'JGE ROTULO', descricao: 'muda o PC se for maior ou igual (N = 0)', cpp: 'if (>=)', ula: false, grupo: 'Comparação e desvio' },
   { op: 'JL', apelidos: [], operandos: ['rotulo'], uso: 'JL ROTULO', descricao: 'muda o PC se for menor (N = 1)', cpp: 'if (<)', ula: false, grupo: 'Comparação e desvio', extra: true },
   { op: 'JLE', apelidos: [], operandos: ['rotulo'], uso: 'JLE ROTULO', descricao: 'muda o PC se for menor ou igual (N = 1 ou Z = 1)', cpp: 'if (<=)', ula: false, grupo: 'Comparação e desvio', extra: true },
 

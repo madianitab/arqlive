@@ -1,0 +1,85 @@
+<div class="rast-topo">
+  <div class="viz-label">Tabela de rastreamento</div>
+  <os-button-group>
+    <button class="osbg-btn" type="button" [class.primary]="!exercicio()" [attr.aria-pressed]="!exercicio()"
+            title="A tabela é preenchida junto com a execução" (click)="sim.definirModoRastreamento('acompanhar')">
+      <i class="fa-solid fa-eye"></i> Acompanhar
+    </button>
+    <button class="osbg-btn" type="button" [class.primary]="exercicio()" [attr.aria-pressed]="exercicio()"
+            title="O aluno preenche a tabela e confere" (click)="sim.definirModoRastreamento('exercicio')">
+      <i class="fa-solid fa-pen-to-square"></i> Exercício
+    </button>
+  </os-button-group>
+</div>
+
+@if (sim.alterado()) {
+  <p class="rast-dica">O programa mudou: clique em <b>Executar</b> para gerar a tabela.</p>
+} @else if (!rast().linhas.length) {
+  <p class="rast-dica">A tabela aparece quando o programa é executado.</p>
+} @else {
+  <p class="rast-dica">
+    @if (exercicio()) {
+      Preencha cada linha com os valores <b>depois</b> da instrução e clique em <b>Conferir</b>.
+      Registrador sem valor: deixe em branco ou escreva <i>vazio</i>.
+    } @else {
+      Uma linha por instrução, com os valores <b>depois</b> dela. Avance a execução para preencher.
+    }
+    @if (rast().inicial.length) { <span class="rast-ini">Estado inicial: {{ rast().inicial.join(' · ') }}.</span> }
+  </p>
+
+  @if (exercicio()) {
+    <div class="rast-acoes">
+      <button type="button" class="rast-btn primario" (click)="sim.conferir()"><i class="fa-solid fa-check"></i> Conferir</button>
+      <button type="button" class="rast-btn" (click)="sim.revelarResposta()">
+        <i class="fa-solid" [class.fa-eye]="!sim.mostrarResposta()" [class.fa-eye-slash]="sim.mostrarResposta()"></i>
+        {{ sim.mostrarResposta() ? 'Esconder resposta' : 'Mostrar resposta' }}
+      </button>
+      <button type="button" class="rast-btn" (click)="sim.apagarRespostas()"><i class="fa-solid fa-eraser"></i> Apagar respostas</button>
+      @if (sim.placar(); as pl) {
+        <span class="rast-placar" [class.tudo]="pl.certas === pl.total">{{ pl.certas }} de {{ pl.total }} certas</span>
+      }
+    </div>
+  }
+
+  <div class="rast-wrap">
+    <table class="rast">
+      <thead>
+        <tr>
+          <th title="Endereço da instrução">PC</th>
+          <th class="t-ir">IR (instrução)</th>
+          @for (c of rast().colunas; track c.id) { <th [title]="c.dica">{{ c.titulo }}</th> }
+        </tr>
+      </thead>
+      <tbody>
+        @for (l of linhas(); track l.ciclo) {
+          <tr [class.atual]="!exercicio() && l.ciclo === cicloAtual()">
+            <td class="t-pc">{{ l.pc }}</td>
+            <td class="t-ir"><code>{{ l.ir }}</code></td>
+            @for (c of rast().colunas; track c.id) {
+              @if (exercicio()) {
+                <td class="t-ex" [attr.data-estado]="estado(l, c)">
+                  @if (c.tipo === 'texto') {
+                    <input type="text" [value]="sim.resposta(l.ciclo, c.id)" (input)="digitar(l, c, $event)"
+                           [attr.aria-label]="c.titulo + ', instrução ' + l.ciclo" autocomplete="off" spellcheck="false" />
+                  } @else {
+                    <select [value]="sim.resposta(l.ciclo, c.id)" (change)="digitar(l, c, $event)" [attr.aria-label]="c.titulo + ', instrução ' + l.ciclo">
+                      <option value=""></option>
+                      @if (c.tipo === 'simnao') { <option value="sim">sim</option><option value="não">não</option> }
+                      @else { <option value="0">0</option><option value="1">1</option> }
+                    </select>
+                  }
+                  @if (sim.mostrarResposta()) { <span class="t-resp">{{ mostrar(l.valores[c.id]) }}</span> }
+                </td>
+              } @else {
+                <td [class.nulo]="l.valores[c.id] === ''" [class.sim]="c.id === 'ULA' && l.valores[c.id] === 'sim'">{{ mostrar(l.valores[c.id]) }}</td>
+              }
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  @if (cortada()) {
+    <p class="rast-dica">Mostrando só as primeiras {{ exercicio() ? limiteExercicio : linhas().length }} instruções executadas.</p>
+  }
+}

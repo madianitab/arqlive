@@ -2,9 +2,17 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Execucao, Passo, simular } from '../models/assembly';
 import { PORTAS_ENTRADA } from '../models/instrucoes';
 import { EXEMPLOS_ASSEMBLY } from '../models/exemplos';
+import { conferirCelula, gerarRastreamento } from '../models/rastreamento';
 
 /** Como o botão de passo avança. */
 export type ModoPasso = 'ciclo' | 'instrucao';
+
+/** Tabela de rastreamento: acompanha a execução ou vira exercício para o aluno preencher. */
+export type ModoRastreamento = 'acompanhar' | 'exercicio';
+
+/** Linhas mostradas na tabela (o exercício fica curto, como nos slides). */
+export const LIMITE_RASTREAMENTO = 200;
+export const LIMITE_EXERCICIO = 30;
 
 const MODELO_VAZIO = '; valores na memória\nX: 5\n\n; código\nLOAD R1, X\n\nHALT\n';
 
@@ -27,6 +35,28 @@ export class SimuladorAssemblyService {
   private timer: ReturnType<typeof setTimeout> | null = null;
   /** Incrementado quando alguém pede para abrir a tabela de instruções. */
   readonly pedidoTabela = signal(0);
+
+  // ─── tabela de rastreamento ───
+  readonly modoRastreamento = signal<ModoRastreamento>('acompanhar');
+  readonly rastreamento = computed(() => gerarRastreamento(this.execucao()));
+  /** Respostas do aluno no exercício (chave "ciclo:coluna"). */
+  readonly respostas = signal<Record<string, string>>({});
+  readonly conferido = signal(false);
+  readonly mostrarResposta = signal(false);
+  /** Linhas do exercício (as primeiras instruções executadas). */
+  readonly linhasExercicio = computed(() => this.rastreamento().linhas.slice(0, LIMITE_EXERCICIO));
+  /** Acertos depois de conferir. */
+  readonly placar = computed(() => {
+    if (!this.conferido()) return null;
+    const { colunas } = this.rastreamento();
+    let certas = 0;
+    let total = 0;
+    this.linhasExercicio().forEach(l => colunas.forEach(c => {
+      total++;
+      if (this.celulaCerta(l.ciclo, c.id)) certas++;
+    }));
+    return { certas, total };
+  });
 
   readonly programa = computed(() => this.execucao().programa);
   readonly erros = computed(() => this.programa().erros);
@@ -54,7 +84,7 @@ export class SimuladorAssemblyService {
 
   executar(): void {
     this.pausar();
-    this.execucao.set(this.rodar());
+    this.novaExecucao();
     this.alterado.set(false);
     this.posicao.set(0);
     if (!this.erros().length) this.tocar();
@@ -63,7 +93,7 @@ export class SimuladorAssemblyService {
   /** Monta de novo e mostra direto o resultado final. */
   irAoFim(): void {
     if (this.alterado()) {
-      this.execucao.set(this.rodar());
+      this.novaExecucao();
       this.alterado.set(false);
     }
     this.irPara(this.total() - 1);
@@ -88,7 +118,7 @@ export class SimuladorAssemblyService {
     if (this.alterado()) return;
     const pos = this.posicao();
     this.pausar();
-    this.execucao.set(this.rodar());
+    this.novaExecucao();
     this.posicao.set(Math.min(pos, this.total() - 1));
   }
 
@@ -103,7 +133,7 @@ export class SimuladorAssemblyService {
     this.exemplo.set(id);
     this.codigo.set(ex.codigo);
     this.entradas.set({ ...(ex.entradas ?? {}) });
-    this.execucao.set(this.rodar());
+    this.novaExecucao();
     this.alterado.set(false);
     this.posicao.set(0);
   }
@@ -113,7 +143,7 @@ export class SimuladorAssemblyService {
     this.exemplo.set('');
     this.codigo.set(MODELO_VAZIO);
     this.entradas.set({});
-    this.execucao.set(this.rodar());
+    this.novaExecucao();
     this.alterado.set(true);
     this.posicao.set(0);
   }
@@ -158,6 +188,49 @@ export class SimuladorAssemblyService {
       this.posicao.update(i => i + 1);
       this.agendar();
     }, 1100 / this.velocidade());
+  }
+
+  // ─── exercício de rastreamento ───
+  definirModoRastreamento(m: ModoRastreamento): void {
+    this.modoRastreamento.set(m);
+    this.conferido.set(false);
+    this.mostrarResposta.set(false);
+  }
+
+  responder(ciclo: number, coluna: string, valor: string): void {
+    this.respostas.update(r => ({ ...r, [`${ciclo}:${coluna}`]: valor }));
+    this.conferido.set(false);
+  }
+
+  resposta(ciclo: number, coluna: string): string {
+    return this.respostas()[`${ciclo}:${coluna}`] ?? '';
+  }
+
+  celulaCerta(ciclo: number, coluna: string): boolean {
+    const l = this.rastreamento().linhas.find(x => x.ciclo === ciclo);
+    const c = this.rastreamento().colunas.find(x => x.id === coluna);
+    return !!l && !!c && conferirCelula(l.valores[coluna], this.resposta(ciclo, coluna), c);
+  }
+
+  conferir(): void {
+    this.conferido.set(true);
+    this.mostrarResposta.set(false);
+  }
+
+  revelarResposta(): void {
+    this.mostrarResposta.update(v => !v);
+  }
+
+  apagarRespostas(): void {
+    this.respostas.set({});
+    this.conferido.set(false);
+    this.mostrarResposta.set(false);
+  }
+
+  /** Executa de novo e zera o exercício (as respostas valem para a execução anterior). */
+  private novaExecucao(): void {
+    this.execucao.set(this.rodar());
+    this.apagarRespostas();
   }
 
   private rodar(): Execucao {

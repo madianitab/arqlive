@@ -45,18 +45,26 @@ HALT               ; encerra o programa
 | `ADD` / `SUB` / `MUL R1, R2` | calcula na ULA, guarda em R1 e atualiza as flags | `R1 = R1 + R2;` |
 | `CMP R1, R2` | compara (R1 − R2, sem guardar) e atualiza as flags Z, N e C | `if (R1 == R2)` |
 | `JMP` / `JE` / `JNE ROTULO` | muda o PC: sempre / se igual / se diferente | `if`, `for`, `while` |
+| `JG` / `JGE ROTULO` | muda o PC: se maior / se maior ou igual (Aula 15) | `if (a > b)`, `if (a >= b)` |
 | `IN R1, BOTAO` | lê um pino ou sensor (`BOTAO`, `A0`…`A5`, número do pino) | `R1 = digitalRead(p);` |
 | `OUT LED, R1` | envia R1 para a porta (`LED` = pino 13, `TELA`, número do pino ou `OUT R2, R3`) | `digitalWrite(p, R1);` |
 | `DELAY 1000` | pausa em ms | `delay(1000);` |
 | `CALL imprime` | exibe na TELA a variável `TEXTO` | `printf(...)` |
 | `HALT` | encerra o programa | |
 
-**Acréscimos do simulador** (não estão no slide): `DIV`, `JG`, `JGE`, `JL`, `JLE`, `CALL rótulo` / `RET` com pilha (SP) e `NOP`.
+**Acréscimos do simulador** (não estão nos slides): `DIV`, `JL`, `JLE`, `CALL rótulo` / `RET` com pilha (SP) e `NOP`.
 
 - **Registradores:** `R0` a `R7`; **UC:** PC, IR, MAR, MDR e SP; **flags:** Z (zero), N (negativo) e C (carry, “empresta 1”).
 - **Memória:** `X: 5`, `Y: vazio` (ou só `Y`), vetor `LED: 8, 9, 10` (acesso `LED[R1]`), texto `TEXTO: "X = "`; também `X: 10 e Y: 20`.
 - **Constantes:** decimal, `'0'` (código ASCII), `HIGH` e `LOW`. **Rótulos:** `LOOP:`. **Comentários:** `;`.
 - A lista completa está em `src/app/features/assembly/models/instrucoes.ts`.
+
+## Tabela de rastreamento
+
+No Simulador de Assembly, abaixo da execução, a **tabela de rastreamento** das atividades dos slides (Aula 14, slides 15 e 16; Aula 15, slides 18 e 19): uma linha por instrução executada, com PC, IR, os registradores usados, as variáveis na memória, "Usou a ULA?", as flags Z, N e C, os pinos em HIGH (se houver) e o próximo PC, sempre com os valores **depois** da instrução.
+
+- **Acompanhar:** a tabela é preenchida junto com a execução, destacando a instrução atual.
+- **Exercício:** PC e IR vêm prontos; o aluno preenche o resto, clica em **Conferir** (células certas em verde, erradas em vermelho, com o placar) e pode **mostrar a resposta**. Até 30 instruções.
 
 ## Tradutor C → Assembly
 

@@ -27,7 +27,7 @@ src/app/
     └── assembly/
         ├── models/       lógica pura (montador, executor, exemplos), sem Angular → fácil de testar
         ├── services/     estado da tela (signals)
-        ├── simulador/components/   home-, lateral-, area- e editor-assembly
+        ├── simulador/components/   home-, lateral-, area-, editor- e rastreamento-assembly
         ├── executor/components/    executor-assembly (reusa o editor-assembly)
         ├── tradutor/components/    tradutor-c (C → Assembly; reusa o editor-assembly e o CSS do executor)
         └── components/             tabela-instrucoes (janela com todas as instruções, usada nas duas telas)
@@ -70,9 +70,9 @@ O visual vem do design system do OSLive, copiado em `src/app/ui`. A página **`#
 - Ciclo de instrução: **busca → decodificação → execução**.
 - Numeração a partir de 0 (endereços de memória e posições de vetor).
 
-### Assembly (padrão da Aula 14 de ArqII — "Do C++ ao Assembly")
+### Assembly (padrão das Aulas 14 e 15 de ArqII — "Do C++ ao Assembly")
 - **O padrão é o dos slides da professora.** Pode-se acrescentar coisas, mas não mudar o que está no slide. Se algo no slide estiver errado, use o correto e avise a professora.
-- **Conjunto de instruções em um arquivo só:** `features/assembly/models/instrucoes.ts` (nome, apelidos, operandos, uso, descrição, equivalente em C++, se usa a ULA e se é acréscimo — `extra: true`). O montador, o executor e a referência da lateral leem dali.
+- **Conjunto de instruções em um arquivo só:** `features/assembly/models/instrucoes.ts` (nome, apelidos, operandos, uso, descrição, equivalente em C++, se usa a ULA e se é acréscimo — `extra: true`). O montador, o executor e a referência da lateral leem dali. `JG` e `JGE` estão na tabela de saltos da Aula 15 (slide 12) e não são acréscimos; `DIV`, `JL`, `JLE`, `CALL rótulo`/`RET` e `NOP` são.
 - **Modelo RISC (AVR do Arduino):** só `LOAD`/`STORE` acessam a memória; `ADD`, `SUB`, `MUL`, `DIV` e `CMP` trabalham com registrador e registrador/constante. **O destino vem sempre primeiro** (`OUT porta, R1`).
 - **Registradores:** `R0` a `R7` (uso geral); PC, IR, MAR, MDR e SP; flags Z, N e C.
 - **Memória:** cada instrução ocupa uma palavra, a partir do endereço 0; as variáveis vêm logo depois, na ordem da declaração (vetor = palavras seguidas; texto = uma palavra). A pilha (8 palavras) só existe se o programa usa `CALL rótulo`/`RET`; o SP começa no fim dela e desce.
@@ -83,6 +83,7 @@ O visual vem do design system do OSLive, copiado em `src/app/ui`. A página **`#
 - **`CALL imprime`:** rotina do sistema (como o `printf`): exibe na TELA a variável `TEXTO`, sem quebra de linha. `OUT TELA, R1` exibe o valor e quebra a linha.
 - **`vazio`:** variável sem valor (`D: vazio` ou só `D`); ler (`LOAD`) uma variável vazia é erro de execução.
 - **Tabela de instruções:** botão **Instruções** na barra de ações do Simulador e do Executor (e "Ver todas as instruções" na lateral do Simulador) abre a janela `tabela-instrucoes`, gerada a partir de `instrucoes.ts` (uso, outras formas, descrição, C++, ULA), com busca. Instrução nova aparece lá automaticamente.
+- **Tabela de rastreamento** (`rastreamento-assembly`, abaixo da execução no Simulador): gerada por `models/rastreamento.ts` a partir da execução — uma linha por instrução, com os valores **depois** dela (respostas dos slides 16 da Aula 14 e 19 da Aula 15). Colunas: PC (endereço da instrução), IR, registradores que o programa usa (vazios até receberem valor, como no "R1 vazio" do slide), variáveis (exceto o TEXTO), "Usou a ULA?", Z, N, C, "Pinos em HIGH" (só se o programa usa portas de saída) e "Próximo PC" (`fim` quando o programa termina). Modo **Acompanhar** (preenche junto com a execução, até 200 linhas) e modo **Exercício** (até 30 linhas; o aluno preenche e confere). A conferência ignora espaços e maiúsculas e aceita em branco = `vazio`, `s`/`n` para sim/não e `13` = `LED`. O estado do exercício fica no `SimuladorAssemblyService` e é zerado a cada nova execução.
 - **Executor Assembly** (`#/assembly/executor`): tela limpa, sem passo a passo — editor à esquerda; entrada (portas), saída (TELA, memória final, portas) e o **código equivalente em C++** à direita. O C++ é gerado por `models/cpp.ts` **no estilo das aulas, sem registradores**: os registradores guardam expressões, o `STORE` vira atribuição (`D = X + 2;`, `Y++;`), IN/OUT/DELAY viram `digitalRead`/`analogRead`/`digitalWrite`/`delay`, e CMP + desvio viram `if`, `if-else`, `for` (contador que começa numa constante e termina com `ADD R, 1`) ou `while`. Um registrador que leva valor de uma volta do laço para a outra sem passar pela memória (acumulador em registrador, ou o registrador da condição de um `while`) vira uma **variável local** (`int valor = 1;` … `valor = valor * 2;`), como o contador do `for`. O **zero implícito** (registrador usado sem `LOAD`) não aparece nas somas: `ADD R1, 12` → `12`, não `0 + 12`. Formato Arduino (`setup`/`loop`, `led`, `botao`) se o programa usa portas ou DELAY; senão, PC (`main`, `printf`). Se houver desvio fora desses padrões (ou CALL de sub-rotina), usa a tradução direta de `models/cpp-direto.ts` (instrução por instrução, com `goto`) e a tela avisa que não foi possível montar o C++ no estilo das aulas.
 - **Tradutor C → Assembly** (`#/assembly/tradutor`): mesma tela limpa do executor (reusa o CSS dele) — C/C++ à esquerda; assembly gerado (somente leitura), avisos e resultado da execução à direita. A tradução fica em `models/c-assembly.ts` (lógica pura) e segue as respostas dos slides:
   - **Memória:** valor inicial constante vai direto para a memória (`X: 5`); sem valor, ou declarada dentro de um laço, fica `vazio`; vetores sem valor ficam com zeros. Variável usada só como pino (`int led = 13;`) e `const`/`#define` não vão para a memória (entram direto na instrução).
@@ -115,7 +116,7 @@ npx ng build --base-href /arqlive/         # build de produção sem erros
 npx ng test --watch=false                  # testes unitários (Karma)
 ```
 
-- **Testes unitários:** todos devem passar. O `c-assembly.spec.ts` confere as traduções dos slides (instrução por instrução) e executa o assembly gerado para conferir os valores finais. O `assembly.spec.ts` confere a montagem, o ciclo de instrução, as flags (tabela do slide 8), os rastreamentos dos slides 16 e 38 e o resultado de todos os exemplos.
+- **Testes unitários:** todos devem passar. O `rastreamento.spec.ts` confere as tabelas dos slides 16 (Aula 14) e 19 (Aula 15) e a conferência das respostas. O `c-assembly.spec.ts` confere as traduções dos slides (instrução por instrução) e executa o assembly gerado para conferir os valores finais. O `assembly.spec.ts` confere a montagem, o ciclo de instrução, as flags (tabela do slide 8), os rastreamentos dos slides 16 e 38 e o resultado de todos os exemplos.
 - **Navegador:** confira a tela nos temas claro e escuro, sem erros no console, e com **zoom de 150 a 175%** (lateral aberta e recolhida), sem rolagem horizontal na página.
 
 ## 7. Entrega (fluxo da professora)
