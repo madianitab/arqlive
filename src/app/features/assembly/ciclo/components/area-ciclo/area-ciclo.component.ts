@@ -1,4 +1,4 @@
-import { Component, computed } from '@angular/core';
+import { Component, ElementRef, OnDestroy, computed, signal } from '@angular/core';
 import { OsSimPlayerComponent } from 'src/app/ui/sim-player/sim-player.component';
 import { CicloCpuService } from 'src/app/features/assembly/services/ciclo-cpu.service';
 import { Componente, EtapaFluxo, Fluxo, MicroOp, caminhoFluxo } from 'src/app/features/assembly/models/ciclo';
@@ -48,7 +48,9 @@ const GRUPOS = [
   { nome: 'Execução', fase: 'execucao', y1: 224, y2: 446 },
 ];
 
-// ─────────────────────────── CPU e memória (viewBox 680 × altura) ───────────────────────────
+// ─────────────────────────── CPU e memória ───────────────────────────
+// Largo (viewBox 680): registradores/ULA | barramento | MDR…IR | memória e UC.
+// Compacto (viewBox 412, celular): a memória vai para baixo da CPU e a UC fica ao lado do decodificador.
 
 interface Caixa { x: number; y: number; w: number; h: number; }
 
@@ -59,6 +61,9 @@ const BARRA = 202;    // barramento interno
 const LARG = 170;
 const ALT = 60;
 const LINHA_MEM = 24;
+// no compacto, os caminhos até a memória descem pela direita da CPU
+const LANE_MAR_C = 400;
+const LANE_MDR_C = 406;
 
 const NOMES: Record<string, string> = {
   MDR: 'MDR (RDM)', MAR: 'MAR (REM)', PC: 'PC (CI)', IR: 'IR (RI)', ULA: 'ULA (UAL)', FLAGS: 'Flags',
@@ -76,17 +81,29 @@ const FASES: Record<string, string> = {
   standalone: true,
   imports: [OsSimPlayerComponent],
 })
-export class AreaCicloComponent {
+export class AreaCicloComponent implements OnDestroy {
   readonly nos = NOS;
   readonly ligacoes = Object.entries(LIGACOES).map(([id, d]) => ({ id, d }));
   readonly grupos = GRUPOS;
   readonly nomes = NOMES;
   readonly nomesFase = FASES;
-  readonly colC = COL_C;
   readonly cx = CX;
   readonly caixasFixas = ['MDR', 'MAR', 'PC', 'IR', 'DEC', 'UC', 'ULA', 'FLAGS'];
 
-  constructor(public sim: CicloCpuService) {}
+  /** Área estreita (celular): CPU e memória em layout compacto. */
+  readonly compacto = signal(false);
+  private observador?: ResizeObserver;
+
+  constructor(public sim: CicloCpuService, host: ElementRef<HTMLElement>) {
+    if (typeof ResizeObserver !== 'undefined') {
+      this.observador = new ResizeObserver(([e]) => { if (e.contentRect.width > 0) this.compacto.set(e.contentRect.width < 620); });
+      this.observador.observe(host.nativeElement);
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.observador?.disconnect();
+  }
 
   // ─── fluxograma ───
 
@@ -170,38 +187,52 @@ export class AreaCicloComponent {
   readonly regs = computed(() => this.sim.registradores().map((r, i) => ({ r, y: 16 + i * (ALT + 12) })));
 
   readonly geo = computed(() => {
+    const compacto = this.compacto();
     const nRegs = Math.max(2, this.regs().length);
     const ula = 16 + nRegs * (ALT + 12) + 8;
     const flags = ula + ALT + 12;
     const memAlt = 66 + this.sim.celulas().length * LINHA_MEM;
-    const dec = Math.max(304, 16 + memAlt + 14);
+    const dec = compacto ? Math.max(304, flags + ALT + 12) : Math.max(304, 16 + memAlt + 14);
     const caixas: Record<string, Caixa> = {
       MDR: { x: COL_B, y: 16, w: LARG, h: ALT },
       MAR: { x: COL_B, y: 88, w: LARG, h: ALT },
       PC: { x: COL_B, y: 160, w: LARG, h: ALT },
       IR: { x: COL_B, y: 232, w: LARG, h: ALT },
       DEC: { x: COL_B, y: dec, w: LARG, h: ALT },
-      UC: { x: COL_C, y: dec, w: 260, h: ALT },
+      UC: compacto ? { x: COL_A, y: dec, w: LARG, h: ALT } : { x: COL_C, y: dec, w: 260, h: ALT },
       ULA: { x: COL_A, y: ula, w: LARG, h: ALT },
       FLAGS: { x: COL_A, y: flags, w: LARG, h: ALT },
     };
     this.regs().forEach(g => caixas[g.r] = { x: COL_A, y: g.y, w: LARG, h: ALT });
-    const altura = Math.max(dec + ALT, flags + ALT) + 26;
-    return { caixas, memAlt, altura };
+    const mem: Caixa = compacto
+      ? { x: COL_A, y: dec + ALT + 22, w: COL_B + LARG - COL_A, h: memAlt }
+      : { x: COL_C, y: 16, w: 260, h: memAlt };
+    const largura = compacto ? 412 : 680;
+    const altura = compacto ? mem.y + mem.h + 26 : Math.max(dec + ALT, flags + ALT) + 26;
+    return { compacto, caixas, mem, largura, altura };
   });
 
-  readonly linhasMem = computed(() => this.sim.celulas().map((c, i) => ({ ...c, y: 16 + 56 + i * LINHA_MEM })));
+  readonly linhasMem = computed(() => {
+    const m = this.geo().mem;
+    return this.sim.celulas().map((c, i) => ({ ...c, y: m.y + 56 + i * LINHA_MEM }));
+  });
 
   /** Ligações fixas ao barramento (desenhadas em cinza). */
   readonly ligacoesCpu = computed(() => {
-    const g = this.geo().caixas;
+    const { caixas: g, compacto, mem } = this.geo();
     const ys = (cs: string[]) => cs.filter(c => g[c]).map(c => g[c].y + ALT / 2);
     const todas = [...ys(['ULA', 'FLAGS', ...this.regs().map(r => r.r)]).map(y => `M${COL_A + LARG} ${y} H${BARRA}`),
       ...ys(['MDR', 'MAR', 'PC', 'IR']).map(y => `M${COL_B} ${y} H${BARRA}`)];
-    const fundo = Math.max(...Object.values(g).filter(c => c.x !== COL_C).map(c => c.y + ALT / 2));
+    const fundo = Math.max(...['MDR', 'MAR', 'PC', 'IR', 'ULA', 'FLAGS', ...this.regs().map(r => r.r)].map(c => g[c].y + ALT / 2));
     todas.push(`M${BARRA} ${16 + ALT / 2} V${fundo}`);
-    todas.push(`M303 ${g['IR'].y + ALT} V${g['DEC'].y}`, `M${COL_B + LARG} ${g['DEC'].y + ALT / 2} H${COL_C}`);
-    todas.push(`M${COL_B + LARG} ${g['MAR'].y + ALT / 2} H${COL_C}`, `M${COL_B + LARG} ${g['MDR'].y + ALT / 2} H${COL_C}`);
+    todas.push(`M303 ${g['IR'].y + ALT} V${g['DEC'].y}`);
+    if (compacto) {
+      todas.push(`M${COL_B} ${g['DEC'].y + ALT / 2} H${COL_A + LARG}`);
+      todas.push(`M${COL_B + LARG} ${g['MAR'].y + ALT / 2} H${LANE_MAR_C} V${mem.y + 30}`, `M${COL_B + LARG} ${g['MDR'].y + ALT / 2} H${LANE_MDR_C} V${mem.y + 30}`);
+    } else {
+      todas.push(`M${COL_B + LARG} ${g['DEC'].y + ALT / 2} H${COL_C}`);
+      todas.push(`M${COL_B + LARG} ${g['MAR'].y + ALT / 2} H${COL_C}`, `M${COL_B + LARG} ${g['MDR'].y + ALT / 2} H${COL_C}`);
+    }
     return todas;
   });
 
@@ -269,22 +300,30 @@ export class AreaCicloComponent {
 
   private yMem(a: MicroOp): number {
     const end = a.memoria?.end ?? 0;
-    return (this.linhasMem().find(l => l.end === end)?.y ?? 72) + LINHA_MEM / 2;
+    return (this.linhasMem().find(l => l.end === end)?.y ?? this.geo().mem.y + 56) + LINHA_MEM / 2;
   }
 
   private caminho(f: Fluxo, a: MicroOp): string[] {
-    const g = this.geo().caixas;
-    const xMem = COL_C + 10;
+    const { caixas: g, compacto, mem, altura } = this.geo();
+    const dir = COL_B + LARG;
+    const ym = this.yMem(a);
     switch (`${f.de}>${f.para}`) {
-      case 'MAR>MEM': return [`M${COL_B + LARG} ${this.centroY('MAR')} H392 V${this.yMem(a) - 4} H${xMem}`];
-      case 'MEM>MDR': return [`M${xMem} ${this.yMem(a) + 4} H398 V${this.centroY('MDR')} H${COL_B + LARG}`];
-      case 'MDR>MEM': return [`M${COL_B + LARG} ${this.centroY('MDR')} H398 V${this.yMem(a) + 4} H${xMem}`];
-      case 'IR>UC': return [`M303 ${g['IR'].y + ALT} V${g['DEC'].y}`, `M${COL_B + LARG} ${this.centroY('DEC')} H${COL_C}`];
+      case 'MAR>MEM': return compacto
+        ? [`M${dir} ${this.centroY('MAR')} H${LANE_MAR_C} V${ym - 4} H${mem.x + mem.w - 8}`]
+        : [`M${dir} ${this.centroY('MAR')} H392 V${ym - 4} H${COL_C + 10}`];
+      case 'MEM>MDR': return compacto
+        ? [`M${mem.x + mem.w - 8} ${ym + 4} H${LANE_MDR_C} V${this.centroY('MDR')} H${dir}`]
+        : [`M${COL_C + 10} ${ym + 4} H398 V${this.centroY('MDR')} H${dir}`];
+      case 'MDR>MEM': return compacto
+        ? [`M${dir} ${this.centroY('MDR')} H${LANE_MDR_C} V${ym + 4} H${mem.x + mem.w - 8}`]
+        : [`M${dir} ${this.centroY('MDR')} H398 V${ym + 4} H${COL_C + 10}`];
+      case 'IR>UC': return compacto
+        ? [`M303 ${g['IR'].y + ALT} V${g['DEC'].y}`, `M${COL_B} ${this.centroY('DEC')} H${COL_A + LARG}`]
+        : [`M303 ${g['IR'].y + ALT} V${g['DEC'].y}`, `M${dir} ${this.centroY('DEC')} H${COL_C}`];
       case 'ULA>FLAGS': return [`M101 ${g['ULA'].y + ALT} V${g['FLAGS'].y}`];
-      case 'FLAGS>UC': {
-        const y = this.geo().altura - 10;
-        return [`M101 ${g['FLAGS'].y + ALT} V${y} H534 V${g['UC'].y + ALT}`];
-      }
+      case 'FLAGS>UC': return compacto
+        ? [`M101 ${g['FLAGS'].y + ALT} V${g['UC'].y}`]
+        : [`M101 ${g['FLAGS'].y + ALT} V${altura - 10} H534 V${g['UC'].y + ALT}`];
     }
     if (!g[f.de] || !g[f.para]) return [];
     return [`M${this.ladoBarra(f.de)} ${this.centroY(f.de)} H${BARRA} V${this.centroY(f.para)} H${this.ladoBarra(f.para)}`];

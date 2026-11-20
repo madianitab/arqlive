@@ -70,7 +70,7 @@ No Simulador de Assembly, abaixo da execução, a **tabela de rastreamento**: um
 
 ## Ciclo de instrução
 
-Tela limpa, com foco no ciclo **busca → decodificação → execução**. O aluno escolhe um programa fixo (sem laço, com desvio ou com laço) e avança **uma micro-operação por vez** ou **uma fase por vez**. Dois painéis lado a lado (um embaixo do outro em telas estreitas):
+Tela limpa, com foco no ciclo **busca → decodificação → execução**. O aluno escolhe um programa fixo (sem laço, com desvio ou com laço) e avança **uma micro-operação por vez** ou **uma fase por vez**. Dois painéis lado a lado (um embaixo do outro em telas estreitas; no celular, a memória fica embaixo da CPU):
 
 - **Fluxograma do ciclo:** buscar a próxima instrução → incrementar o PC → decodificar → **tem operando?** (sim: cálculo do endereço do operando → buscar e armazenar operando → volta à pergunta) → executar a operação → escrever o resultado → volta para a busca. A caixa da etapa atual fica acesa e pulsa, o traço corre pela ligação percorrida e as caixas já feitas na instrução ficam marcadas, com a cor da fase (busca, decodificação, execução).
 - **CPU e memória:** cartões com o nome e o valor — registradores usados, ULA, flags, MDR, MAR, PC, IR, decodificador e unidade de controle, ligados por um barramento — e a memória como tabela "Endereço | Conteúdo" (instruções e variáveis). As partes envolvidas na micro-operação acendem e a seta mostra o caminho do dado (ex.: MAR → memória → MDR).

@@ -76,7 +76,7 @@
     <!-- CPU E MEMÓRIA -->
     <div class="painel">
       <div class="viz-label">CPU e memória</div>
-      <svg class="cpu" [attr.viewBox]="'0 0 680 ' + geo().altura" role="img" [attr.aria-label]="'CPU e memória: ' + a.texto">
+      <svg class="cpu" [attr.viewBox]="'0 0 ' + geo().largura + ' ' + geo().altura" role="img" [attr.aria-label]="'CPU e memória: ' + a.texto">
         <defs>
           <marker id="cpu-seta" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto-start-reverse">
             <path d="M0 0 L10 5 L0 10 z" class="cpu-ponta"></path>
@@ -87,22 +87,22 @@
 
         <!-- memória -->
         <g class="memoria">
-          <rect class="mem-fundo" [attr.x]="colC" y="16" width="260" [attr.height]="geo().memAlt" rx="12"></rect>
-          <text class="mem-titulo" [attr.x]="colC + 130" y="40">Memória</text>
-          <text class="mem-col" [attr.x]="colC + 46" y="62">Endereço</text>
-          <text class="mem-col esq" [attr.x]="colC + 92" y="62">Conteúdo</text>
+          <rect class="mem-fundo" [attr.x]="geo().mem.x" [attr.y]="geo().mem.y" [attr.width]="geo().mem.w" [attr.height]="geo().mem.h" rx="12"></rect>
+          <text class="mem-titulo" [attr.x]="geo().mem.x + geo().mem.w / 2" [attr.y]="geo().mem.y + 24">Memória</text>
+          <text class="mem-col" [attr.x]="geo().mem.x + 46" [attr.y]="geo().mem.y + 46">Endereço</text>
+          <text class="mem-col esq" [attr.x]="geo().mem.x + 92" [attr.y]="geo().mem.y + 46">Conteúdo</text>
           @for (l of linhasMem(); track l.end) {
             <g class="mem-linha" [attr.data-tipo]="l.tipo"
                [class.atual]="l.tipo === 'instrucao' && l.end === a.end && a.fase !== 'carga'"
                [attr.data-acesso]="a.memoria?.end === l.end ? a.memoria?.tipo : null"
                [class.mudou]="mudou('M' + l.end)">
-              <rect [attr.x]="colC + 8" [attr.y]="l.y" width="244" height="22" rx="5"></rect>
+              <rect [attr.x]="geo().mem.x + 8" [attr.y]="l.y" [attr.width]="geo().mem.w - 16" height="22" rx="5"></rect>
               @if (l.tipo === 'instrucao' && l.end === a.estado.pc && a.fase !== 'fim' && a.fase !== 'erro') {
-                <text class="m-pc" [attr.x]="colC + 14" [attr.y]="l.y + 16">▸</text>
+                <text class="m-pc" [attr.x]="geo().mem.x + 14" [attr.y]="l.y + 16">▸</text>
               }
-              <text class="m-end" [attr.x]="colC + 46" [attr.y]="l.y + 16">{{ l.end }}</text>
-              <text class="m-val" [attr.x]="colC + 92" [attr.y]="l.y + 16">{{ valorMem(l.end) }}</text>
-              <text class="m-nome" [attr.x]="colC + 246" [attr.y]="l.y + 16">{{ l.nome }}</text>
+              <text class="m-end" [attr.x]="geo().mem.x + 46" [attr.y]="l.y + 16">{{ l.end }}</text>
+              <text class="m-val" [attr.x]="geo().mem.x + 92" [attr.y]="l.y + 16">{{ valorMem(l.end) }}</text>
+              <text class="m-nome" [attr.x]="geo().mem.x + geo().mem.w - 14" [attr.y]="l.y + 16">{{ l.nome }}</text>
             </g>
           }
         </g>

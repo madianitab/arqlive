@@ -1,3 +1,6 @@
+/* bloco: o layout compacto da CPU depende da largura medida aqui */
+:host { display: block; }
+
 /* cor de cada fase: busca (info), decodificação (warn), execução (a) */
 [data-fase="busca"], [data-f="busca"] { --fc: var(--info); --fs: var(--info-soft); --fd: var(--info-deep); }
 [data-fase="decodificacao"], [data-f="decodificacao"] { --fc: var(--warn); --fs: var(--warn-soft); --fd: var(--warn-deep); }
@@ -5,7 +8,12 @@
 [data-fase="carga"], [data-fase="fim"] { --fc: var(--ok); --fs: var(--ok-soft); --fd: var(--ok-deep); }
 [data-fase="erro"] { --fc: var(--err); --fs: var(--err-soft); --fd: var(--err-deep); }
 
-.viz { display: flex; flex-direction: column; gap: 16px; }
+.viz {
+  display: flex; flex-direction: column; gap: 16px;
+  /* cores dos diagramas (o tema escuro troca abaixo) */
+  --c-linha: var(--line); --c-caixa: var(--surface); --c-borda: var(--line);
+  --c-nome: var(--text-3); --c-texto: var(--text-2); --c-mem: var(--a-soft); --c-mem-linha: var(--surface);
+}
 
 /* ───────── topo ───────── */
 .topo { display: flex; flex-direction: column; gap: 10px; }
@@ -31,16 +39,16 @@ svg { width: 100%; height: auto; display: block; }
 
 /* ───────── fluxograma ───────── */
 .fluxo { font-family: var(--f-sans); }
-.grupo path { fill: none; stroke: var(--line); stroke-width: 1.5; }
-.grupo text { font-size: 11.5px; font-weight: 600; fill: var(--text-3); text-anchor: end; }
+.grupo path { fill: none; stroke: var(--c-linha); stroke-width: 1.5; }
+.grupo text { font-size: 11.5px; font-weight: 600; fill: var(--c-nome); text-anchor: end; }
 .grupo.ativo path { stroke: var(--fc); stroke-width: 2.5; }
 .grupo.ativo text { fill: var(--fd); }
 
-.fx-liga { fill: none; stroke: var(--line); stroke-width: 2; }
+.fx-liga { fill: none; stroke: var(--c-linha); stroke-width: 2; }
 .fx-liga.feita { stroke: var(--fc); opacity: .55; }
-.fx-ponta { fill: var(--line); }
+.fx-ponta { fill: var(--c-linha); }
 .fx-ponta-cor { fill: var(--fc); }
-.fx-rotulo { font-size: 12px; font-weight: 600; fill: var(--text-3); }
+.fx-rotulo { font-size: 12px; font-weight: 600; fill: var(--c-nome); }
 .fx-rotulo.escolhido { fill: var(--a); font-weight: 800; font-size: 13px; }
 
 /* o traço do passo atual "corre" pela ligação */
@@ -50,8 +58,8 @@ svg { width: 100%; height: auto; display: block; }
 }
 @keyframes corre { to { stroke-dashoffset: 0; } }
 
-.no rect, .no polygon { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; transition: fill .3s, stroke .3s; }
-.no text { font-size: 13px; font-weight: 600; fill: var(--text-2); text-anchor: middle; transition: fill .3s; }
+.no rect, .no polygon { fill: var(--c-caixa); stroke: var(--c-borda); stroke-width: 1.5; transition: fill .3s, stroke .3s; }
+.no text { font-size: 13px; font-weight: 600; fill: var(--c-texto); text-anchor: middle; transition: fill .3s; }
 .no[data-e="feito"] rect, .no[data-e="feito"] polygon { fill: var(--fs); stroke: var(--fc); }
 .no[data-e="feito"] text { fill: var(--fd); }
 .no[data-e="atual"] rect, .no[data-e="atual"] polygon { fill: var(--fc); stroke: var(--fc); stroke-width: 2; animation: pulsa 1.4s ease-in-out infinite; }
@@ -63,29 +71,29 @@ svg { width: 100%; height: auto; display: block; }
 
 /* ───────── CPU e memória ───────── */
 .cpu { font-family: var(--f-mono); }
-.cpu-liga { fill: none; stroke: var(--line); stroke-width: 2; }
+.cpu-liga { fill: none; stroke: var(--c-linha); stroke-width: 2; }
 
-.caixa rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; transition: fill .3s, stroke .3s; }
-.caixa .nome { font-family: var(--f-sans); font-size: 12px; fill: var(--text-3); text-anchor: middle; }
+.caixa rect { fill: var(--c-caixa); stroke: var(--c-borda); stroke-width: 1.5; transition: fill .3s, stroke .3s; }
+.caixa .nome { font-family: var(--f-sans); font-size: 12px; fill: var(--c-nome); text-anchor: middle; }
 .caixa .val { font-size: 18px; font-weight: 700; fill: var(--text); text-anchor: middle; white-space: pre; }
 .caixa .val.flags { font-size: 16px; }
-.caixa .val.ocioso { fill: var(--text-2); font-weight: 600; }
+.caixa .val.ocioso { fill: var(--c-texto); font-weight: 600; }
 .caixa.ativo rect { fill: var(--fs); stroke: var(--fc); stroke-width: 2.5; }
 .caixa.ativo .nome { fill: var(--fd); font-weight: 600; }
 .caixa.mudou .val { fill: var(--fd); animation: surge .45s ease-out; }
 @keyframes surge { from { opacity: 0; } to { opacity: 1; } }
 
-.mem-fundo { fill: var(--a-soft); stroke: var(--a); stroke-width: 1.5; }
+.mem-fundo { fill: var(--c-mem); stroke: var(--a); stroke-width: 1.5; }
 .mem-titulo { font-family: var(--f-sans); font-size: 13px; font-weight: 700; fill: var(--a-deep); text-anchor: middle; }
 .mem-col { font-family: var(--f-sans); font-size: 11.5px; fill: var(--a-deep); opacity: .8; text-anchor: middle; }
 .mem-col.esq { text-anchor: start; }
 .mem-linha rect { fill: transparent; stroke: transparent; transition: fill .3s, stroke .3s; }
-.mem-linha .m-end { font-size: 13px; fill: var(--text-2); text-anchor: middle; }
+.mem-linha .m-end { font-size: 13px; fill: var(--c-texto); text-anchor: middle; }
 .mem-linha .m-val { font-size: 13px; fill: var(--text); }
 .mem-linha[data-tipo="dado"] .m-val { font-weight: 700; }
-.mem-linha .m-nome { font-family: var(--f-sans); font-size: 11.5px; font-style: italic; fill: var(--text-3); text-anchor: end; }
+.mem-linha .m-nome { font-family: var(--f-sans); font-size: 11.5px; font-style: italic; fill: var(--c-nome); text-anchor: end; }
 .mem-linha .m-pc { font-size: 13px; font-weight: 700; fill: var(--info); }
-.mem-linha.atual rect { fill: var(--surface); stroke: var(--a-line); }
+.mem-linha.atual rect { fill: var(--c-mem-linha); stroke: var(--a-line); }
 .mem-linha[data-acesso="leitura"] rect { fill: var(--info-soft); stroke: var(--info); stroke-width: 2; }
 .mem-linha[data-acesso="escrita"] rect { fill: var(--warn-soft); stroke: var(--warn); stroke-width: 2; }
 .mem-linha.mudou .m-val { fill: var(--warn-deep); }
@@ -98,7 +106,7 @@ svg { width: 100%; height: auto; display: block; }
 
 .legenda { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; font-size: 12px; color: var(--text-3); margin-top: 6px; }
 .legenda span { display: inline-flex; align-items: center; gap: 6px; }
-.lg { display: inline-block; width: 14px; height: 12px; border-radius: 3px; border: 1px solid var(--line); font-style: normal; }
+.lg { display: inline-block; width: 14px; height: 12px; border-radius: 3px; border: 1px solid var(--c-borda); font-style: normal; }
 .lg.pc { border: none; color: var(--info); font-weight: 700; width: auto; line-height: 12px; }
 .lg.atual { background: var(--surface); border-color: var(--a-line); }
 .lg.leitura { background: var(--info-soft); border-color: var(--info); }
@@ -109,8 +117,30 @@ svg { width: 100%; height: auto; display: block; }
   .no[data-e="atual"] rect, .no[data-e="atual"] polygon, .caixa.mudou .val { animation: none; }
 }
 
-/* tema escuro: as cores de fase são claras, então o texto sobre elas fica escuro */
-:host-context([data-theme="dark"]) .no[data-e="atual"] text { fill: var(--bg); }
+/* ───────── tema escuro ─────────
+   Os tokens escuros (--line, --*-soft) quase somem sobre o fundo nos diagramas:
+   linhas, contornos e nomes mais claros, caixas um pouco acima do fundo e
+   preenchimentos de fase misturados com a própria cor. */
+:host-context([data-theme="dark"]) .viz {
+  --c-linha: #6a6352; --c-caixa: #25221b; --c-borda: #57513f;
+  --c-nome: #b3ac98; --c-texto: #ddd6c4; --c-mem: #2b2016; --c-mem-linha: #3a2c1e;
+}
+:host-context([data-theme="dark"]) [data-f],
+:host-context([data-theme="dark"]) [data-fase] { --fs: color-mix(in srgb, var(--fc) 26%, #1a1813); }
+:host-context([data-theme="dark"]) .no[data-e="atual"] text { fill: #15130e; }
+:host-context([data-theme="dark"]) .no[data-e="feito"] text,
+:host-context([data-theme="dark"]) .caixa.ativo .nome { fill: #fff; }
+:host-context([data-theme="dark"]) .caixa.ativo .val,
+:host-context([data-theme="dark"]) .caixa.mudou .val { fill: #fff; }
+:host-context([data-theme="dark"]) .mem-titulo,
+:host-context([data-theme="dark"]) .mem-col { fill: var(--a-hover); opacity: 1; }
+:host-context([data-theme="dark"]) .mem-linha .m-val { fill: #f1ece0; }
+:host-context([data-theme="dark"]) .mem-linha[data-acesso="leitura"] rect { fill: color-mix(in srgb, var(--info) 30%, #1a1813); }
+:host-context([data-theme="dark"]) .mem-linha[data-acesso="escrita"] rect { fill: color-mix(in srgb, var(--warn) 30%, #1a1813); }
+:host-context([data-theme="dark"]) .mem-linha.mudou .m-val { fill: var(--warn-deep); }
+:host-context([data-theme="dark"]) .fx-liga.feita { opacity: .8; }
+:host-context([data-theme="dark"]) .detalhe { background: #201d16; }
+:host-context([data-theme="dark"]) .detalhe span { color: #d6cfbd; }
 
 /* projetor e zoom: um painel embaixo do outro quando a área fica estreita */
 @container sim-main (max-width: 860px) {
