@@ -7,6 +7,7 @@ Simulador didático de Arquitetura e Organização de Computadores. O aluno escr
 | Assunto | Modo | Rota | Pasta |
 |---|---|---|---|
 | Assembly | Simulador de Assembly (passo a passo) | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
+| Assembly | Ciclo de instrução (busca, decodificação e execução em micro-operações, com programas fixos) | `#/assembly/ciclo` | `src/app/features/assembly/ciclo` |
 | Assembly | Executor Assembly (executa e mostra o resultado e o C++ equivalente) | `#/assembly/executor` | `src/app/features/assembly/executor` |
 | Assembly | Tradutor C → Assembly (escreve em C/C++ e vê o Assembly simplificado correspondente) | `#/assembly/tradutor` | `src/app/features/assembly/tradutor` |
 | Assembly | Exercícios (escreve o assembly ou o C, responde às perguntas e confere) | `#/assembly/exercicios` | `src/app/features/assembly/exercicios` |
@@ -66,6 +67,16 @@ No Simulador de Assembly, abaixo da execução, a **tabela de rastreamento**: um
 
 - **Acompanhar:** a tabela é preenchida junto com a execução, destacando a instrução atual.
 - **Exercício:** PC e IR vêm prontos; o aluno preenche o resto, clica em **Conferir** (células certas em verde, erradas em vermelho, com o placar) e pode **mostrar a resposta**. Até 30 instruções.
+
+## Ciclo de instrução
+
+Tela limpa, com foco no ciclo **busca → decodificação → execução**. O aluno escolhe um programa fixo (sem laço, com desvio ou com laço) e avança **uma micro-operação por vez** ou **uma fase por vez**. Dois painéis lado a lado (um embaixo do outro em telas estreitas):
+
+- **Fluxograma do ciclo:** buscar a próxima instrução → incrementar o PC → decodificar → **tem operando?** (sim: cálculo do endereço do operando → buscar e armazenar operando → volta à pergunta) → executar a operação → escrever o resultado → volta para a busca. A caixa da etapa atual fica acesa e pulsa, o traço corre pela ligação percorrida e as caixas já feitas na instrução ficam marcadas, com a cor da fase (busca, decodificação, execução).
+- **CPU e memória:** cartões com o nome e o valor — registradores usados, ULA, flags, MDR, MAR, PC, IR, decodificador e unidade de controle, ligados por um barramento — e a memória como tabela "Endereço | Conteúdo" (instruções e variáveis). As partes envolvidas na micro-operação acendem e a seta mostra o caminho do dado (ex.: MAR → memória → MDR).
+- **Topo:** instrução atual, fase, micro-operação (`MAR ← PC`, `MDR ← M[MAR]`…) com a explicação e os valores, e os controles: reproduzir, passo a passo, "Próxima instrução" e teclado (← → passo, espaço reproduz, ↓ próxima instrução). O código fica na lateral, com a linha atual destacada.
+
+As micro-operações (e a etapa do fluxograma de cada uma) são geradas em `src/app/features/assembly/models/ciclo.ts`, a partir da execução do simulador; os programas ficam em `models/exemplos-ciclo.ts`.
 
 ## Exercícios
 

@@ -90,11 +90,17 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
         <div class="scene-inner">
           <div class="section-idx">02 — Laboratório</div>
           <h2 class="section-title">Aprenda fazendo</h2>
-          <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-4 tw-gap-4 tw-mt-8 scene-deck">
+          <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 xl:tw-grid-cols-5 tw-gap-4 tw-mt-8 scene-deck">
             <a class="deck-link" href="#/assembly/simulador" (click)="go('/assembly/simulador'); $event.preventDefault()">
               <os-card title="Simulador de Assembly">
                 <os-card-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg></os-card-icon>
                 Escreva o programa de um lado e veja a execução, passo a passo, do outro.
+              </os-card>
+            </a>
+            <a class="deck-link" href="#/assembly/ciclo" (click)="go('/assembly/ciclo'); $event.preventDefault()">
+              <os-card title="Ciclo de instrução">
+                <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/><path d="M9 12h6M12 9v6"/></svg></os-card-icon>
+                Veja cada instrução passar pela busca, decodificação e execução.
               </os-card>
             </a>
             <a class="deck-link" href="#/assembly/executor" (click)="go('/assembly/executor'); $event.preventDefault()">

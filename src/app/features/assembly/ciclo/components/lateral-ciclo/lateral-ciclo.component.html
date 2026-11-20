@@ -1,0 +1,23 @@
+<div class="sim-config">
+  <os-panel title="Programa">
+    <select class="form-control" aria-label="Programa" [ngModel]="sim.exemplo()" (ngModelChange)="sim.carregar($event)">
+      @for (g of sim.grupos; track g) {
+        <optgroup [label]="g">
+          @for (e of exemplosDo(g); track e.id) { <option [value]="e.id">{{ e.nome }}</option> }
+        </optgroup>
+      }
+    </select>
+    <pre class="codigo" aria-label="Código assembly">@for (l of linhas(); track l.n) {<span class="ln" [class.atual]="l.n === sim.atual()?.linha"><span class="n">{{ l.n }}</span>{{ l.cod }}<span class="com">{{ l.com }}</span>
+</span>}</pre>
+  </os-panel>
+
+  <os-panel title="Passo a passo">
+    <div class="modo" role="radiogroup" aria-label="Como avançar">
+      <label class="check-row"><input type="radio" name="modo-ciclo" [checked]="sim.modo() === 'micro'" (change)="sim.definirModo('micro')" />
+        Uma micro-operação por passo</label>
+      <label class="check-row"><input type="radio" name="modo-ciclo" [checked]="sim.modo() === 'fase'" (change)="sim.definirModo('fase')" />
+        Uma fase por passo</label>
+    </div>
+    <p class="hint">Teclado: <kbd>←</kbd> <kbd>→</kbd> passo · <kbd>espaço</kbd> reproduz · <kbd>↓</kbd> próxima instrução.</p>
+  </os-panel>
+</div>

@@ -1,0 +1,15 @@
+select.form-control { height: auto; }
+.modo { display: flex; flex-direction: column; gap: 6px; }
+.codigo {
+  margin: 10px 0 0; padding: 8px 0; max-height: 52vh; overflow: auto;
+  font-family: var(--f-mono); font-size: 12px; line-height: 1.55;
+  background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); color: var(--text);
+}
+.ln { display: block; padding: 0 8px 0 0; white-space: pre; }
+.ln .n { display: inline-block; width: 26px; padding-right: 8px; text-align: right; color: var(--text-3); user-select: none; }
+.ln .com { color: var(--text-3); }
+.ln.atual { background: var(--a-soft); box-shadow: inset 3px 0 0 var(--a); font-weight: 700; }
+kbd {
+  font-family: var(--f-mono); font-size: 10.5px; padding: 0 4px; border: 1px solid var(--line);
+  border-bottom-width: 2px; border-radius: 4px; background: var(--surface); color: var(--text-2);
+}
