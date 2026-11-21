@@ -1,6 +1,6 @@
 /**
  * Gera o código C++ (PC ou Arduino) que corresponde a um programa em Assembly simplificado,
- * legível: sem registradores, com expressões, if e for.
+ * legível: sem registradores e sem goto, só com expressões, if, for, while e funções.
  *
  *   LOAD R1, X / ADD R1, 2 / STORE D, R1     →   D = X + 2;
  *   IN R1, BOTAO / CMP R1, 1 / JNE FIM …     →   if (digitalRead(botao) == HIGH) { … }
@@ -8,15 +8,15 @@
  *
  * Como funciona: os registradores guardam EXPRESSÕES (não valores). Um STORE grava a
  * expressão na variável; IN/OUT/DELAY viram as funções do Arduino; CMP + desvio viram
- * if/if-else/for/while quando seguem esses padrões. Um registrador que leva valor de
- * uma volta do laço para a outra sem passar pela memória vira uma variável local
- * (int valor = 1; … valor = valor * 2;). O zero que o registrador tem antes de receber
- * valor não aparece nas somas (ADD R1, 12 sem LOAD → 12, e não 0 + 12).
- * Se o programa tiver um desvio fora desses padrões (ou CALL de sub-rotina), usa a
- * tradução direta (cpp-direto.ts).
+ * if/if-else/for/while/break/continue; CALL rótulo vira uma função. Um registrador que leva
+ * valor de uma volta do laço para a outra vira uma variável: o contador do laço (i, j, k…),
+ * a própria variável da memória que ele copia (LOAD R1, soma … STORE soma, R1 → soma) ou
+ * valor, valor2… O zero que o registrador tem antes de receber valor não aparece nas somas.
+ * Quando há for, também é gerada a versão com while (codigoWhile). Laço com o teste no fim
+ * vira while/for (nunca do-while). Se um desvio não corresponder a if/for/while (ex.: entra
+ * no meio de um laço), não há C++: o resultado traz o aviso.
  */
 import { Instrucao, Operando, Programa } from './assembly';
-import { gerarCppDireto } from './cpp-direto';
 import { PINO_LED, REGISTRADORES, Registrador, VARIAVEL_TEXTO } from './instrucoes';
 
 // ─────────────────────────── expressões ───────────────────────────
@@ -84,19 +84,37 @@ function atribuicao(nome: string, e: Expr): string {
   return `${nome} = ${mostrar(e)};`;
 }
 
-class NaoEstruturado extends Error {}
+const AVISO_PADRAO = 'Este programa tem desvios que não correspondem a if, for ou while em C.';
+
+class NaoEstruturado extends Error {
+  constructor(msg = AVISO_PADRAO) { super(msg); }
+}
+
+function temChamada(e: Expr): boolean {
+  if (e.k === 'call') return true;
+  if (e.k === 'bin') return temChamada(e.l) || temChamada(e.r);
+  if (e.k === 'idx') return temChamada(e.i);
+  return false;
+}
 
 // ─────────────────────────── tradução ───────────────────────────
 
 type Estado = Record<Registrador, Expr>;
 
+const COMPARA: Record<string, string> = { JE: '==', JNE: '!=', JG: '>', JGE: '>=', JL: '<', JLE: '<=' };
 const NEGA: Record<string, string> = { JE: '!=', JNE: '==', JG: '<=', JGE: '<', JL: '>=', JLE: '>' };
 const DESVIOS = new Set(['JE', 'JNE', 'JG', 'JGE', 'JL', 'JLE']);
+/** Instruções sem efeito visível (só mudam registradores): podem ficar antes do teste do laço. */
+const PUROS = new Set(['LOAD', 'MOV', 'IN', 'ADD', 'SUB', 'MUL', 'DIV', 'NOP']);
+const ESCREVEM = new Set(['LOAD', 'MOV', 'IN', 'ADD', 'SUB', 'MUL', 'DIV']);
 
 export interface ResultadoCpp {
+  /** C++ (com for, quando houver laço com contador). Vazio quando há aviso. */
   codigo: string;
-  /** 'alto': legível (expressões, if, for); 'direto': instrução por instrução (estrutura não reconhecida). */
-  nivel: 'alto' | 'direto';
+  /** Mesma tradução com while no lugar de cada for (só existe quando o código tem for). */
+  codigoWhile?: string;
+  /** Motivo de não haver C++ (desvio que não corresponde a if/for/while). */
+  aviso?: string;
 }
 
 export function ehArduino(p: Programa): boolean {
@@ -106,19 +124,48 @@ export function ehArduino(p: Programa): boolean {
 }
 
 export function traduzirCpp(p: Programa): ResultadoCpp {
-  if (p.erros.length) return { codigo: '', nivel: 'alto' };
+  if (p.erros.length) return { codigo: '' };
   try {
-    return { codigo: new Tradutor(p).gerar(), nivel: 'alto' };
+    const t = new Tradutor(p, false);
+    const codigo = t.gerar();
+    return t.usouFor ? { codigo, codigoWhile: new Tradutor(p, true).gerar() } : { codigo };
   } catch (e) {
     if (!(e instanceof NaoEstruturado)) throw e;
-    return { codigo: gerarCppDireto(p), nivel: 'direto' };
+    return { codigo: '', aviso: e.message };
   }
 }
 
-/** Só o texto do C++. */
+/** Só o texto do C++ (com for). */
 export function gerarCpp(p: Programa): string {
   return traduzirCpp(p).codigo;
 }
+
+/** Um laço reconhecido no assembly. Índices de instruções; intervalos [início, fim). */
+interface Laco {
+  /** Rótulo do início (para onde o desvio de volta pula). */
+  h: number;
+  /** Desvio que volta para h (JMP ou Jcc). */
+  t: number;
+  /** Onde o código continua depois do laço. */
+  fim: number;
+  /** topo: teste antes do corpo; fim: teste depois do corpo; infinito: sem teste. */
+  tipo: 'topo' | 'fim' | 'infinito';
+  /** Instruções antes do teste, repetidas a cada volta (LOAD R1, X / CMP R1, 3 …). */
+  prefixo: [number, number];
+  /** sai: o Jcc sai do laço quando a condição vale; senão, volta para o início. */
+  teste: { cmp: number; jcc: number; sai: boolean } | null;
+  corpo: [number, number];
+  /** Alvo dos break. */
+  saida: number;
+  /** Bloco depois do laço que só o break executa (ACHOU: … antes de FIM:). */
+  extra: [number, number] | null;
+  /** Alvo dos continue (-1: não há). */
+  continua: number;
+  /** JMP para o meio do laço: trecho executado uma vez antes dele. */
+  antes: [number, number] | null;
+}
+
+interface Contexto { continua: number; saida: number; extra: [number, number] | null }
 
 class Tradutor {
   private readonly ins: Instrucao[];
@@ -126,33 +173,71 @@ class Tradutor {
   private readonly rotuloEm = new Map<number, string>();
   private readonly texto: string | null;
   private textoPendente: string | null = null;
-  private contadores = ['i', 'j', 'k'];
+  /** Nomes dos contadores dos laços (os já usados por variáveis são tirados no construtor). */
+  private contadores = ['i', 'j', 'k', 'm', 'n'];
   private usaLed = false;
   private usaBotao = false;
   private usaTela = false;
   private pinosConstantes = new Set<number>();
-  /** Registradores que guardam valor entre as voltas de um laço → variável local do C++. */
+  /** Registradores ligados a uma variável do C++ (contador, variável local ou global). */
   private locais = new Map<Registrador, string>();
+  /** Último nome que cada registrador teve como variável (para reaproveitar no laço seguinte). */
+  private ultimoLocal = new Map<Registrador, string>();
   private nomesUsados = new Set<string>();
+  /** Variáveis da memória que viraram o contador do for (não são declaradas). */
+  private ocultas = new Set<string>();
+  /** Sub-rotinas (CALL rótulo / RET) → funções. Chave: índice do rótulo. */
+  private funcoes = new Map<number, { ini: number; fim: number; nome: string }>();
+  /** Registradores usados nas sub-rotinas: viram variáveis globais. */
+  private globais: string[] = [];
+  private regsFuncao = new Set<Registrador>();
+  private emFuncao = false;
+  private fimPrincipal: number;
+  private contexto: Contexto[] = [];
+  usouFor = false;
 
-  constructor(private readonly p: Programa) {
+  constructor(private readonly p: Programa, private readonly modoWhile: boolean) {
     this.ins = p.instrucoes;
+    this.fimPrincipal = this.ins.length;
     this.arduino = ehArduino(p);
     p.rotulos.forEach(r => this.rotuloEm.set(r.end, r.nome));
     const t = p.variaveis.find(v => v.nome.toUpperCase() === VARIAVEL_TEXTO);
     this.texto = t && typeof t.valores[0] === 'string' ? t.valores[0] : null;
     p.variaveis.forEach(v => this.nomesUsados.add(v.nome.toLowerCase()));
-    ['i', 'j', 'k', 'p', 'led', 'botao'].forEach(n => this.nomesUsados.add(n));
+    this.contadores = this.contadores.filter(n => !this.nomesUsados.has(n));
+    ['i', 'j', 'k', 'm', 'n', 'p', 'led', 'botao'].forEach(n => this.nomesUsados.add(n));
   }
 
   gerar(): string {
-    const st = {} as Estado;
-    REGISTRADORES.forEach(r => st[r] = { k: 'num', v: 0, txt: '0', imp: true });
-    const corpo = this.bloco(0, this.ins.length, st, 1, true);
+    this.detectarFuncoes();
+    const st = this.estadoInicial();
+    let setup: string[] = [];
+    let corpo: string[];
+    const continuo = this.arduino && !this.funcoes.size ? this.lacoDoLoop() : null;
+    if (continuo) {
+      // o laço infinito do fim vira o próprio loop() do Arduino; o que vem antes vai para o setup()
+      setup = this.bloco(0, continuo.h, st, 1, true);
+      this.fecharTexto(setup, 1);
+      this.escritos(continuo.h, continuo.t).forEach(r => { if (!this.locais.has(r)) st[r] = { k: 'inval' }; });
+      this.invalidarLeituras(st, this.gravadas(continuo.h, continuo.t));
+      corpo = this.bloco(continuo.h, continuo.t, st, 1, true);
+    } else {
+      corpo = this.bloco(0, this.fimPrincipal, st, 1, true);
+    }
     this.fecharTexto(corpo, 1);
 
+    const funcs: string[] = [];
+    for (const f of this.funcoes.values()) {
+      this.emFuncao = true;
+      const linhas = this.bloco(f.ini, f.fim, this.estadoInicial(), 1);
+      this.fecharTexto(linhas, 1);
+      this.emFuncao = false;
+      funcs.push(`void ${f.nome}() {`, ...linhas, '}', '');
+    }
+
     const out: string[] = [];
-    const vars = this.p.variaveis.filter(v => !(v.nome.toUpperCase() === VARIAVEL_TEXTO && typeof v.valores[0] === 'string'));
+    const vars = this.p.variaveis.filter(v => !this.ocultas.has(v.nome)
+      && !(v.nome.toUpperCase() === VARIAVEL_TEXTO && typeof v.valores[0] === 'string'));
     const escalares = vars.filter(v => v.valores.length === 1 && typeof v.valores[0] !== 'string')
       .map(v => (v.valores[0] === null ? v.nome : `${v.nome} = ${v.valores[0]}`));
     const outras = vars.filter(v => v.valores.length > 1 || typeof v.valores[0] === 'string')
@@ -160,29 +245,113 @@ class Tradutor {
         ? `const char ${v.nome}[] = "${v.valores[0]}";`
         : `int ${v.nome}[] = {${v.valores.map(x => x ?? 0).join(', ')}};`));
     const decl = [...(escalares.length ? [`int ${escalares.join(', ')};`] : []), ...outras];
+    if (this.globais.length) decl.push(`int ${this.globais.join(', ')};`);
 
     if (this.arduino) {
       if (this.usaLed) out.push(`int led = ${PINO_LED};`);
       if (this.usaBotao) out.push('int botao = 2;');
       out.push(...decl);
       if (out.length) out.push('');
+      out.push(...funcs);
       out.push('void setup() {');
       if (this.usaTela) out.push('  Serial.begin(9600);');
       if (this.usaLed) out.push('  pinMode(led, OUTPUT);');
       [...this.pinosConstantes].sort((a, b) => a - b).forEach(n => out.push(`  pinMode(${n}, OUTPUT);`));
-      this.p.variaveis.filter(v => this.vetorDePinos(v.nome)).forEach(v =>
+      this.p.variaveis.filter(v => this.vetoresPino.has(v.nome)).forEach(v =>
         out.push(`  for (int p = 0; p < ${v.valores.length}; p++) pinMode(${v.nome}[p], OUTPUT);`));
       if (this.usaBotao) out.push('  pinMode(botao, INPUT);');
-      out.push('}', '', 'void loop() {', ...corpo, '}');
+      out.push(...setup, '}', '', 'void loop() {', ...corpo, '}');
     } else {
       if (this.usaTela) out.push('#include <stdio.h>', '');
-      out.push('int main() {', ...decl.map(d => '  ' + d), ...corpo, '}');
+      if (this.funcoes.size) {
+        // as funções usam as variáveis: elas ficam globais
+        out.push(...decl, '', ...funcs, 'int main() {', ...corpo, '}');
+      } else {
+        out.push('int main() {', ...decl.map(d => '  ' + d), ...corpo, '}');
+      }
     }
     return out.join('\n');
   }
 
   private vetoresPino = new Set<string>();
-  private vetorDePinos(n: string): boolean { return this.vetoresPino.has(n); }
+
+  private estadoInicial(): Estado {
+    const st = {} as Estado;
+    REGISTRADORES.forEach(r => {
+      const g = this.regsFuncao.has(r) ? this.locais.get(r) : undefined;
+      st[r] = g ? { k: 'var', n: g } : { k: 'num', v: 0, txt: '0', imp: true };
+    });
+    return st;
+  }
+
+  // ─────────── sub-rotinas e loop() do Arduino ───────────
+
+  /** CALL rótulo / RET → funções. As sub-rotinas ficam depois do HALT do programa principal. */
+  private detectarFuncoes(): void {
+    const alvos = new Set<number>();
+    this.ins.forEach(it => {
+      const a = it.operandos[0];
+      if (it.def.op === 'CALL' && a.t === 'rotulo' && !a.sistema) alvos.add(a.end);
+    });
+    if (!alvos.size) {
+      if (this.ins.some(it => it.def.op === 'RET')) throw new NaoEstruturado('O RET só pode aparecer no fim de uma sub-rotina chamada com CALL.');
+      return;
+    }
+    const ord = [...alvos].sort((a, b) => a - b);
+    if (this.ins[ord[0] - 1]?.def.op !== 'HALT') {
+      throw new NaoEstruturado('Para virar função em C, a sub-rotina precisa ficar depois do HALT do programa principal.');
+    }
+    this.fimPrincipal = ord[0];
+    let k = ord[0];
+    for (const a of ord) {
+      if (a !== k) throw new NaoEstruturado('Uma sub-rotina chamada com CALL entra no meio de outra: isso não corresponde a uma função em C.');
+      let r = a;
+      while (r < this.ins.length && this.ins[r].def.op !== 'RET') r++;
+      if (r >= this.ins.length) throw new NaoEstruturado(`A sub-rotina ${this.rotuloEm.get(a)} precisa terminar com RET.`);
+      let nome = (this.rotuloEm.get(a) ?? `rotina${a}`).toLowerCase();
+      while (this.nomesUsados.has(nome)) nome += '_';
+      this.nomesUsados.add(nome);
+      this.funcoes.set(a, { ini: a, fim: r, nome });
+      k = r + 1;
+    }
+    if (k !== this.ins.length) throw new NaoEstruturado('Há instruções depois do RET que não pertencem a nenhuma sub-rotina.');
+    // registradores usados nas sub-rotinas viram variáveis globais
+    const regs = new Set<Registrador>();
+    for (let i = this.fimPrincipal; i < this.ins.length; i++) {
+      this.ins[i].operandos.forEach(o => {
+        if (o.t === 'reg') regs.add(o.r);
+        if (o.t === 'mem' && o.indice?.t === 'reg') regs.add(o.indice.r);
+      });
+    }
+    REGISTRADORES.filter(r => regs.has(r)).forEach(r => {
+      const nome = this.novoLocal();
+      this.locais.set(r, nome);
+      this.globais.push(nome);
+      this.regsFuncao.add(r);
+    });
+  }
+
+  /** Laço infinito no fim do programa do Arduino, sem break e sem valor de uma volta para a outra. */
+  private lacoDoLoop(): { h: number; t: number } | null {
+    const t = this.fimPrincipal - 1;
+    const v = this.ins[t];
+    if (!v || v.def.op !== 'JMP') return null;
+    const h = this.alvo(v);
+    if (!this.rotuloEm.has(h) || h > t) return null;
+    const l = this.detectarLaco(h, t + 1);
+    if (!l || l.tipo !== 'infinito' || l.t !== t) return null;
+    for (let k = 0; k < this.ins.length; k++) {
+      const it = this.ins[k];
+      if (k === t || !(it.def.op === 'JMP' || DESVIOS.has(it.def.op))) continue;
+      const a = this.alvo(it);
+      if (k >= h ? (a <= h || a > t) : a > h) return null;
+    }
+    const mudam = this.escritos(h, t);
+    if ([...this.vivos(h, t)].some(r => mudam.has(r))) return null;
+    return { h, t };
+  }
+
+  // ─────────── blocos ───────────
 
   /** Traduz as instruções [s, e). */
   private bloco(s: number, e: number, st: Estado, nivel: number, topo = false): string[] {
@@ -194,8 +363,10 @@ class Tradutor {
       const it = this.ins[i];
       const op = it.def.op;
 
-      // laço: ROTULO: CMP a, b / Jcc FIM / … / JMP ROTULO / FIM:
-      const laco = this.laco(i, e);
+      // break / continue do laço atual
+      const prox = this.controleLaco(i, e, st, out, nivel);
+      if (prox >= 0) { i = prox; continue; }
+      const laco = this.detectarLaco(i, e);
       if (laco) {
         i = this.traduzirLaco(laco, st, out, nivel);
         continue;
@@ -208,27 +379,27 @@ class Tradutor {
           continue;
         }
       }
-      if (op === 'JMP' || DESVIOS.has(op) || op === 'RET') throw new NaoEstruturado();
+      if (op === 'JMP' || DESVIOS.has(op) || op === 'RET') throw new NaoEstruturado(this.avisoDesvio(i));
 
       const [a, b] = it.operandos;
       switch (op) {
-        case 'LOAD': this.definir(this.reg(a), this.expr(b, st), st, emitir); break;
-        case 'MOV': this.definir(this.reg(a), valido(st[this.reg(b)]), st, emitir); break;
+        case 'LOAD': this.definir(this.reg(a), this.expr(b, st), st, emitir, i); break;
+        case 'MOV': this.definir(this.reg(a), valido(st[this.reg(b)]), st, emitir, i); break;
         case 'ADD': case 'SUB': case 'MUL': case 'DIV': {
           const r = this.reg(a);
           const l = valido(st[r]);
           const d = valido(this.expr(b, st));
           const simb = ({ ADD: '+', SUB: '-', MUL: '*', DIV: '/' } as const)[op];
-          this.definir(r, simb === '+' ? somar(l, d) : { k: 'bin', op: simb, l, r: d }, st, emitir);
+          this.definir(r, simb === '+' ? somar(l, d) : { k: 'bin', op: simb, l, r: d }, st, emitir, i);
           break;
         }
         case 'CMP': case 'NOP': break;
-        case 'STORE': emitir(this.store(a, this.reg(b), st)); break;
+        case 'STORE': { const l = this.store(a, this.reg(b), st); if (l) emitir(l); break; }
         case 'IN': {
           const nome = b.t === 'porta' ? b.nome : b.t === 'pino' ? String(b.v) : mostrar(st[this.reg(b)]);
           const analog = /^A\d$/.test(nome);
           if (nome === 'BOTAO') this.usaBotao = true;
-          this.definir(this.reg(a), { k: 'call', txt: `${analog ? 'analogRead' : 'digitalRead'}(${nome === 'BOTAO' ? 'botao' : nome})`, digital: !analog }, st, emitir);
+          this.definir(this.reg(a), { k: 'call', txt: `${analog ? 'analogRead' : 'digitalRead'}(${nome === 'BOTAO' ? 'botao' : nome})`, digital: !analog }, st, emitir, i);
           break;
         }
         case 'OUT': {
@@ -259,14 +430,23 @@ class Tradutor {
         }
         case 'DELAY': emitir(`delay(${mostrar(this.expr(a, st))});`); break;
         case 'CALL': {
-          if (!(a.t === 'rotulo' && a.sistema) || this.texto === null) throw new NaoEstruturado();
+          if (a.t === 'rotulo' && !a.sistema) {
+            const f = this.funcoes.get(a.end);
+            if (!f) throw new NaoEstruturado();
+            emitir(`${f.nome}();`);
+            // a função pode ter mudado as variáveis globais e a memória
+            this.invalidarLeituras(st, new Set([...this.gravadas(f.ini, f.fim), ...this.globais]));
+            break;
+          }
+          if (this.texto === null) throw new NaoEstruturado();
           this.fecharTexto(out, nivel);
           this.usaTela = true;
           this.textoPendente = this.texto;
           break;
         }
         case 'HALT':
-          if (!(topo && i === this.ins.length - 1)) emitir(this.arduino ? 'while (true) { }' : 'return 0;');
+          if (this.emFuncao) throw new NaoEstruturado('HALT dentro de uma sub-rotina não corresponde a uma função em C.');
+          if (!(topo && i === this.fimPrincipal - 1)) emitir(this.arduino ? 'while (true) { }' : 'return 0;');
           break;
       }
       i++;
@@ -274,17 +454,57 @@ class Tradutor {
     return out;
   }
 
+  /** Desvio para o fim (break), para o teste (continue) ou para o bloco do break do laço atual. */
+  private controleLaco(i: number, e: number, st: Estado, out: string[], nivel: number): number {
+    const ctx = this.contexto[this.contexto.length - 1];
+    if (!ctx) return -1;
+    const it = this.ins[i];
+    const tipo = (alvo: number) => alvo === ctx.continua ? 'continue'
+      : alvo === ctx.saida ? 'break'
+      : ctx.extra && alvo === ctx.extra[0] ? 'extra' : null;
+    let cond: string | null = null;
+    let jcc: Instrucao;
+    let prox: number;
+    if (it.def.op === 'JMP') { jcc = it; prox = i + 1; }
+    else if (it.def.op === 'CMP' && i + 1 < e && DESVIOS.has(this.ins[i + 1].def.op)) { jcc = this.ins[i + 1]; prox = i + 2; }
+    else return -1;
+    const t = tipo(this.alvo(jcc));
+    if (!t) return -1;
+    if (jcc !== it) cond = this.condicao(it, jcc, st, false);
+    const ind = '  '.repeat(nivel);
+    this.fecharTexto(out, nivel);
+    if (t === 'extra') {
+      const linhas = this.bloco(ctx.extra![0], ctx.extra![1], { ...st }, nivel + 1);
+      this.fecharTexto(linhas, nivel + 1);
+      out.push(cond ? `${ind}if (${cond}) {` : `${ind}{`, ...linhas, `${ind}  break;`, `${ind}}`);
+    } else {
+      out.push(cond ? `${ind}if (${cond}) ${t};` : `${ind}${t};`);
+    }
+    return prox;
+  }
+
   /**
-   * Novo valor do registrador. Se ele está ligado a uma variável local (laço),
-   * a atribuição vai para o código na hora; senão, ele só guarda a expressão.
+   * Novo valor do registrador. Se ele está ligado a uma variável do C++, a atribuição vai
+   * para o código na hora; senão, ele só guarda a expressão.
    */
-  private definir(r: Registrador, novo: Expr, st: Estado, emitir: (l: string) => void): void {
+  private definir(r: Registrador, novo: Expr, st: Estado, emitir: (l: string) => void, idx: number): void {
     const nome = this.locais.get(r);
     if (!nome) { st[r] = novo; return; }
     const v: Expr = { k: 'var', n: nome };
     if (igual(novo, v)) return;
-    emitir(atribuicao(nome, valido(novo)));
-    REGISTRADORES.forEach(k => { if (k !== r && usaVar(st[k], nome)) st[k] = { k: 'inval' }; });
+    const linha = atribuicao(nome, valido(novo));
+    // outro registrador que depende do valor antigo e ainda vai ser usado ganha uma variável
+    REGISTRADORES.forEach(k => {
+      if (k === r || this.locais.has(k) || !usaVar(st[k], nome)) return;
+      if (this.vivo(k, idx + 1)) {
+        const n = this.novoLocal();
+        emitir(`int ${n} = ${mostrar(st[k])};`);
+        st[k] = { k: 'var', n };
+      } else {
+        st[k] = { k: 'inval' };
+      }
+    });
+    emitir(linha);
     st[r] = v;
   }
 
@@ -301,6 +521,15 @@ class Tradutor {
     }
   }
 
+  private novoContador(): string {
+    const n = this.contadores.shift();
+    if (n) return n;
+    for (let k = 2; ; k++) {
+      const nome = `i${k}`;
+      if (!this.nomesUsados.has(nome)) { this.nomesUsados.add(nome); return nome; }
+    }
+  }
+
   /** Registradores lidos pela instrução. */
   private lidos(it: Instrucao): Registrador[] {
     const so = ['LOAD', 'MOV', 'IN'].includes(it.def.op);
@@ -313,21 +542,45 @@ class Tradutor {
   }
 
   /**
-   * Registradores lidos no corpo [s, e) antes de receberem valor novo:
+   * Registradores lidos em [s, e) antes de receberem valor novo:
    * guardam o valor da volta anterior. Escrita depois de um desvio não conta como certa.
    */
-  private vivos(s: number, e: number): Set<Registrador> {
+  private vivos(s: number, e: number, pular = -1, teste = -1): Set<Registrador> {
     const vivos = new Set<Registrador>();
     const definidos = new Set<Registrador>();
     let condicional = false;
     for (let k = s; k < e; k++) {
+      if (k === pular) continue;
       const it = this.ins[k];
       this.lidos(it).forEach(r => { if (!definidos.has(r)) vivos.add(r); });
-      if (it.def.op === 'JMP' || DESVIOS.has(it.def.op)) { condicional = true; continue; }
+      if (k !== teste && (it.def.op === 'JMP' || DESVIOS.has(it.def.op))) { condicional = true; continue; }
       const a = it.operandos[0];
-      if (!condicional && a?.t === 'reg' && ['LOAD', 'MOV', 'IN', 'ADD', 'SUB', 'MUL', 'DIV'].includes(it.def.op)) definidos.add(a.r);
+      if (!condicional && a?.t === 'reg' && ESCREVEM.has(it.def.op)) definidos.add(a.r);
     }
     return vivos;
+  }
+
+  /** O valor do registrador, a partir da instrução `ini`, ainda é lido (seguindo os desvios)? */
+  private vivo(r: Registrador, ini: number): boolean {
+    const visto = new Set<number>();
+    const pilha = [ini];
+    while (pilha.length) {
+      let k = pilha.pop()!;
+      while (k >= 0 && k < this.ins.length && !visto.has(k)) {
+        visto.add(k);
+        const it = this.ins[k];
+        const op = it.def.op;
+        if (this.lidos(it).includes(r)) return true;
+        if (op === 'HALT' || op === 'RET') break;
+        if (op === 'CALL' && it.operandos[0].t === 'rotulo' && !it.operandos[0].sistema && this.regsFuncao.has(r)) return true;
+        if (op === 'JMP') { k = this.alvo(it); continue; }
+        if (DESVIOS.has(op)) { pilha.push(this.alvo(it)); k++; continue; }
+        const a = it.operandos[0];
+        if (['LOAD', 'MOV', 'IN'].includes(op) && a.t === 'reg' && a.r === r) break;
+        k++;
+      }
+    }
+    return false;
   }
 
   /** Texto do CALL imprime que não foi seguido de OUT TELA. */
@@ -338,6 +591,7 @@ class Tradutor {
     this.textoPendente = null;
   }
 
+  /** Linha do STORE ('' quando a variável já tem esse valor: o registrador é a própria variável). */
   private store(a: Operando, r: Registrador, st: Estado): string {
     const e = valido(st[r]);
     if (a.t !== 'mem') throw new NaoEstruturado();
@@ -350,6 +604,7 @@ class Tradutor {
       // qualquer expressão que leia o vetor fica desatualizada
       REGISTRADORES.forEach(k => { if (k !== r && usaVar(st[k], a.nome)) st[k] = { k: 'inval' }; });
     } else {
+      if (e.k === 'var' && e.n === a.nome) return '';
       novo = { k: 'var', n: a.nome };
       linha = atribuicao(a.nome, e);
       // a variável mudou: o que dependia do valor antigo passa a usar o novo, se der
@@ -392,39 +647,80 @@ class Tradutor {
     return a.end;
   }
 
+  private ehDesvio(it: Instrucao): boolean {
+    return it.def.op === 'JMP' || DESVIOS.has(it.def.op);
+  }
+
+  private avisoDesvio(i: number): string {
+    const it = this.ins[i];
+    return `O desvio ${it.texto} (linha ${it.linha}) não corresponde a if, for ou while em C.`;
+  }
+
   /** Registradores escritos em [s, e). */
   private escritos(s: number, e: number): Set<Registrador> {
     const w = new Set<Registrador>();
     for (let k = s; k < e; k++) {
       const it = this.ins[k];
       const a = it.operandos[0];
-      if (['LOAD', 'MOV', 'ADD', 'SUB', 'MUL', 'DIV', 'IN'].includes(it.def.op) && a?.t === 'reg') w.add(a.r);
+      if (ESCREVEM.has(it.def.op) && a?.t === 'reg') w.add(a.r);
+      if (it.def.op === 'CALL' && a?.t === 'rotulo' && !a.sistema) this.regsFuncao.forEach(r => w.add(r));
     }
     return w;
   }
 
-  /** Variáveis gravadas (STORE) em [s, e). */
+  /** Variáveis gravadas (STORE) em [s, e), incluindo as das funções chamadas. */
   private gravadas(s: number, e: number): Set<string> {
     const g = new Set<string>();
     for (let k = s; k < e; k++) {
-      const a = this.ins[k].operandos[0];
-      if (this.ins[k].def.op === 'STORE' && a.t === 'mem') g.add(a.nome);
+      const it = this.ins[k];
+      const a = it.operandos[0];
+      if (it.def.op === 'STORE' && a.t === 'mem') g.add(a.nome);
+      if (it.def.op === 'CALL' && a.t === 'rotulo' && !a.sistema) {
+        const f = this.funcoes.get(a.end);
+        if (f) this.gravadas(f.ini, f.fim).forEach(n => g.add(n));
+      }
     }
     return g;
   }
 
   /** Invalida os registradores cujas expressões leem alguma dessas variáveis. */
   private invalidarLeituras(st: Estado, vars: Set<string>): void {
-    REGISTRADORES.forEach(k => { if ([...vars].some(v => usaVar(st[k], v))) st[k] = { k: 'inval' }; });
+    REGISTRADORES.forEach(k => {
+      if (!this.locais.has(k) && [...vars].some(v => usaVar(st[k], v))) st[k] = { k: 'inval' };
+    });
   }
 
-  private condicao(cmp: Instrucao, jcc: Instrucao, st: Estado): string {
+  /** Instruções que leem ou gravam a variável da memória. */
+  private acessa(it: Instrucao, nome: string): boolean {
+    return it.operandos.some(o => o.t === 'mem' && o.nome === nome);
+  }
+
+  private ehVariavelSimples(nome: string): boolean {
+    const v = this.p.variaveis.find(x => x.nome === nome);
+    return !!v && v.valores.length === 1 && typeof v.valores[0] !== 'string';
+  }
+
+  /** Valor da variável quando ela nunca é gravada (STORE) no programa. */
+  private valorFixo(nome: string): number | null {
+    const v = this.p.variaveis.find(x => x.nome === nome);
+    if (!v || v.valores.length !== 1 || typeof v.valores[0] !== 'number') return null;
+    if (this.ins.some(it => it.def.op === 'STORE' && it.operandos[0].t === 'mem' && it.operandos[0].nome === nome)) return null;
+    return v.valores[0];
+  }
+
+  private valorConhecido(e: Expr): number | null {
+    if (e.k === 'num') return e.v;
+    if (e.k === 'var') return this.valorFixo(e.n);
+    return null;
+  }
+
+  private condicao(cmp: Instrucao, jcc: Instrucao, st: Estado, negar = true): string {
     const [a, b] = cmp.operandos;
     const A = valido(st[this.reg(a)]);
     const B = this.expr(b, st);
     let bs = mostrar(B);
     if (A.k === 'call' && A.digital && B.k === 'num' && (B.v === 0 || B.v === 1)) bs = B.v ? 'HIGH' : 'LOW';
-    return `${mostrar(A)} ${NEGA[jcc.def.op]} ${bs}`;
+    return `${mostrar(A)} ${(negar ? NEGA : COMPARA)[jcc.def.op]} ${bs}`;
   }
 
   private traduzirIf(i: number, alvo: number, e: number, st: Estado, out: string[], nivel: number): number {
@@ -454,80 +750,330 @@ class Tradutor {
     }
     out.push(`${ind}}`);
     mudaram.forEach(r => st[r] = this.aposMudanca(r));
+    this.invalidarVariaveis(st, mudaram);
     this.invalidarLeituras(st, this.gravadas(i + 2, fim));
     return fim;
   }
 
-  /** Reconhece ROTULO: CMP / Jcc FIM / corpo / JMP ROTULO / FIM: começando em i. */
-  private laco(i: number, e: number): { ini: number; fim: number } | null {
-    if (!this.rotuloEm.has(i) || this.ins[i].def.op !== 'CMP' || i + 1 >= e || !DESVIOS.has(this.ins[i + 1].def.op)) return null;
-    const fim = this.alvo(this.ins[i + 1]);
-    if (fim <= i + 2 || fim > e) return null;
-    const volta = this.ins[fim - 1];
-    if (volta.def.op !== 'JMP' || this.alvo(volta) !== i) return null;
-    return { ini: i, fim };
+  /** Expressões que usam variáveis do C++ (de registradores) que mudaram ficam inválidas. */
+  private invalidarVariaveis(st: Estado, mudaram: Set<Registrador>): void {
+    const nomes = new Set([...mudaram].map(r => this.locais.get(r)).filter((n): n is string => !!n));
+    if (nomes.size) this.invalidarLeituras(st, nomes);
   }
 
-  private traduzirLaco(l: { ini: number; fim: number }, st: Estado, out: string[], nivel: number): number {
+  // ─────────── laços ───────────
+
+  /** Último desvio em (h, e) que volta para h. */
+  private ultimaVolta(h: number, e: number): number {
+    for (let k = e - 1; k > h - 1; k--) {
+      const it = this.ins[k];
+      if (this.ehDesvio(it) && this.alvo(it) === h) return k;
+    }
+    return -1;
+  }
+
+  /**
+   * Reconhece um laço começando em i:
+   *   ROTULO: [LOAD…] CMP / Jcc FIM / … / JMP ROTULO / FIM:   teste no início (while, for)
+   *   ROTULO: … / CMP / Jcc ROTULO                           teste no fim
+   *   ROTULO: … / JMP ROTULO                                 laço infinito
+   *   JMP TESTE / ROTULO: … / TESTE: … CMP / Jcc ROTULO      entra pelo teste
+   */
+  private detectarLaco(i: number, e: number): Laco | null {
+    const it = this.ins[i];
+    if (it.def.op === 'JMP' && this.rotuloEm.has(i + 1)) {
+      const h = i + 1;
+      const m = this.alvo(it);
+      const t = this.ultimaVolta(h, e);
+      if (t > h && DESVIOS.has(this.ins[t].def.op) && this.ins[t - 1].def.op === 'CMP' && m > h && m <= t - 1) {
+        return this.validarLaco({
+          h, t, fim: t + 1, tipo: 'topo', prefixo: [h, h], teste: { cmp: t - 1, jcc: t, sai: false },
+          corpo: [h, t - 1], saida: t + 1, extra: null, continua: -1, antes: m < t - 1 ? [m, t - 1] : null,
+        }, i);
+      }
+      return null;
+    }
+    if (!this.rotuloEm.has(i)) return null;
+    const h = i;
+    const t = this.ultimaVolta(h, e);
+    if (t < 0) return null;
+    const volta = this.ins[t];
+    if (volta.def.op === 'JMP') {
+      let k = h;
+      while (k < t && PUROS.has(this.ins[k].def.op) && (k === h || !this.rotuloEm.has(k))) k++;
+      const ok = k + 1 < t && this.ins[k].def.op === 'CMP' && (k === h || !this.rotuloEm.has(k))
+        && DESVIOS.has(this.ins[k + 1].def.op) && !this.rotuloEm.has(k + 1);
+      const saida = ok ? this.alvo(this.ins[k + 1]) : -1;
+      if (ok && saida > t && saida <= e) {
+        return this.validarLaco({
+          h, t, fim: saida, tipo: 'topo', prefixo: [h, k], teste: { cmp: k, jcc: k + 1, sai: true },
+          corpo: [k + 2, t], saida, extra: saida > t + 1 ? [t + 1, saida] : null, continua: h, antes: null,
+        }, h);
+      }
+      return this.validarLaco({
+        h, t, fim: t + 1, tipo: 'infinito', prefixo: [h, h], teste: null,
+        corpo: [h, t], saida: t + 1, extra: null, continua: h, antes: null,
+      }, h);
+    }
+    if (t - 1 >= h && this.ins[t - 1].def.op === 'CMP') {
+      return this.validarLaco({
+        h, t, fim: t + 1, tipo: 'fim', prefixo: [h, h], teste: { cmp: t - 1, jcc: t, sai: false },
+        corpo: [h, t - 1], saida: t + 1, extra: null, continua: this.rotuloEm.has(t - 1) ? t - 1 : -1, antes: null,
+      }, h);
+    }
+    return null;
+  }
+
+  /** Confere as entradas e saídas do laço (desvios para o meio dele ou para fora). */
+  private validarLaco(l: Laco, ini: number): Laco {
+    for (let k = 0; k < this.ins.length; k++) {
+      const it = this.ins[k];
+      if (!this.ehDesvio(it)) continue;
+      const a = this.alvo(it);
+      const dentro = k >= ini && k <= l.t;
+      if (!dentro) {
+        if (a > l.h && a <= l.t) {
+          throw new NaoEstruturado(`O desvio ${it.texto} (linha ${it.linha}) entra no meio de um laço. Isso não corresponde a if, for ou while em C.`);
+        }
+        if (a === l.h && k > l.t) throw new NaoEstruturado(this.avisoDesvio(k));
+        continue;
+      }
+      if (k === l.t || (l.teste && k === l.teste.jcc)) continue;
+      if (a < l.h || (a > l.t && a !== l.saida && !(l.extra && a === l.extra[0]))) {
+        throw new NaoEstruturado(`O desvio ${it.texto} (linha ${it.linha}) sai do laço para um ponto que não corresponde a break em C.`);
+      }
+    }
+    if (l.extra) {
+      const alvo = l.extra[0];
+      const entradas = this.ins.filter(it => this.ehDesvio(it) && this.alvo(it) === alvo).length;
+      let limpo = entradas === 1;
+      for (let k = l.extra[0]; k < l.extra[1] && limpo; k++) {
+        if (this.ehDesvio(this.ins[k]) || this.ins[k].def.op === 'HALT' || (k > alvo && this.rotuloEm.has(k))) limpo = false;
+      }
+      if (!limpo) throw new NaoEstruturado(`O trecho do rótulo ${this.rotuloEm.get(alvo)} fica entre o laço e o seu fim: isso não corresponde a break em C.`);
+    }
+    return l;
+  }
+
+  /** Algum desvio em [s, e) vai para `alvo`? */
+  private temDesvioPara(s: number, e: number, alvo: number): boolean {
+    for (let k = s; k < e; k++) if (this.ehDesvio(this.ins[k]) && this.alvo(this.ins[k]) === alvo) return true;
+    return false;
+  }
+
+  /** O registrador só muda, em [s, e), com ADD/SUB de constante? */
+  private soContaComConstante(r: Registrador, s: number, e: number): boolean {
+    let muda = false;
+    for (let k = s; k < e; k++) {
+      const it = this.ins[k];
+      const [a, b] = it.operandos;
+      if (!(ESCREVEM.has(it.def.op) && a?.t === 'reg' && a.r === r)) continue;
+      if (!((it.def.op === 'ADD' || it.def.op === 'SUB') && b.t === 'num')) return false;
+      muda = true;
+    }
+    return muda;
+  }
+
+  /**
+   * O registrador k, que começa com o valor da variável X, pode ser a própria X no C++?
+   * Sim quando o laço não usa X da memória e, logo depois do laço, o registrador é gravado em X.
+   */
+  private podeSerVariavel(k: Registrador, x: string, l: Laco, st: Estado): boolean {
+    if (!this.ehVariavelSimples(x)) return false;
+    for (let q = l.h; q <= l.t; q++) if (this.acessa(this.ins[q], x)) return false;
+    if (REGISTRADORES.some(j => j !== k && usaVar(st[j], x))) return false;
+    if (l.extra) {
+      for (let q = l.extra[0]; q < l.extra[1]; q++) {
+        const it = this.ins[q];
+        if (this.acessa(it, x) || (ESCREVEM.has(it.def.op) && it.operandos[0].t === 'reg' && it.operandos[0].r === k)) return false;
+      }
+    }
+    for (let q = l.fim; q < this.ins.length; q++) {
+      const it = this.ins[q];
+      if (q > l.fim && this.rotuloEm.has(q)) return false;
+      if (this.acessa(it, x)) {
+        const [a, b] = it.operandos;
+        return it.def.op === 'STORE' && a.t === 'mem' && !a.indice && b.t === 'reg' && b.r === k;
+      }
+      if (this.ehDesvio(it) || ['HALT', 'RET', 'CALL'].includes(it.def.op)) return false;
+      if (ESCREVEM.has(it.def.op) && it.operandos[0].t === 'reg' && it.operandos[0].r === k) return false;
+    }
+    return false;
+  }
+
+  private traduzirLaco(l: Laco, st: Estado, out: string[], nivel: number): number {
     const ind = '  '.repeat(nivel);
     this.fecharTexto(out, nivel);
-    const cmp = this.ins[l.ini];
-    const jcc = this.ins[l.ini + 1];
-    const corpoIni = l.ini + 2;
-    const corpoFim = l.fim - 1;          // sem o JMP
-    const mudam = this.escritos(corpoIni, corpoFim);
-    const [ca, cb] = cmp.operandos;
-    const r = this.reg(ca);
+    const [ci, cf] = l.corpo;
+    const temPrefixo = l.prefixo[1] > l.prefixo[0];
+    const mudam = this.escritos(l.h, l.t);
+    const gravadas = this.gravadas(l.h, l.t);
+    const cmp = l.teste ? this.ins[l.teste.cmp] : null;
+    const jcc = l.teste ? this.ins[l.teste.jcc] : null;
+    const r = cmp ? this.reg(cmp.operandos[0]) : null;
+    const cb = cmp ? cmp.operandos[1] : null;
+    /** Operador da condição para continuar no laço. */
+    const opContinua = l.teste ? (l.teste.sai ? NEGA : COMPARA)[jcc!.def.op] : '';
 
-    // for: contador começa numa constante, só muda no ADD R, 1 do fim do corpo
-    const ultimo = this.ins[corpoFim - 1];
-    const ehFor = st[r].k === 'num' && corpoFim > corpoIni && ultimo.def.op === 'ADD'
-      && ultimo.operandos[0].t === 'reg' && ultimo.operandos[0].r === r
-      && ultimo.operandos[1].t === 'num' && ultimo.operandos[1].v === 1
-      && !this.escritos(corpoIni, corpoFim - 1).has(r)
-      && (cb.t === 'num' || (cb.t === 'reg' && !mudam.has(cb.r)));
+    // teste no fim: dá para começar pelo teste quando ele é verdadeiro na primeira vez
+    let primeiraVerdadeira = false;
+    if (l.tipo === 'fim' && r && cb) {
+      const a = this.valorConhecido(st[r]);
+      const b = cb.t === 'num' ? cb.v : cb.t === 'reg' ? this.valorConhecido(st[cb.r]) : null;
+      if (a !== null && b !== null) {
+        primeiraVerdadeira = ({ '==': a === b, '!=': a !== b, '>': a > b, '>=': a >= b, '<': a < b, '<=': a <= b } as Record<string, boolean>)[opContinua];
+      }
+    }
 
-    // registradores que levam valor de uma volta para a outra viram variável local
-    // (o contador do for já vira a variável i)
-    const vivos = this.vivos(corpoIni, ehFor ? corpoFim - 1 : corpoFim);
-    if (!ehFor) { vivos.add(r); if (cb.t === 'reg') vivos.add(cb.r); }
+    // for: contador começa num valor conhecido e só muda no ADD R, 1 do fim do corpo
+    let ehFor = false;
+    let vIni: number | null = null;
+    if (r && cb && !temPrefixo && !l.antes && (l.tipo === 'topo' || primeiraVerdadeira) && cf > ci && !this.locais.has(r)) {
+      const ult = this.ins[cf - 1];
+      vIni = this.valorConhecido(st[r]);
+      ehFor = vIni !== null && ult.def.op === 'ADD'
+        && ult.operandos[0].t === 'reg' && ult.operandos[0].r === r
+        && ult.operandos[1].t === 'num' && ult.operandos[1].v === 1
+        && !this.escritos(ci, cf - 1).has(r)
+        && (cb.t === 'num' || (cb.t === 'reg' && !mudam.has(cb.r)))
+        && (l.continua < 0 || !this.temDesvioPara(ci, cf, l.continua));
+    }
+
+    // registradores que levam valor de uma volta para a outra viram variáveis do C++
+    const vivos = this.vivos(l.h, l.t, ehFor ? cf - 1 : -1, l.teste?.sai ? l.teste.jcc : -1);
+    const doPrefixo = this.escritos(l.prefixo[0], l.prefixo[1]);
     const novos: Registrador[] = [];
-    REGISTRADORES.forEach(k => {
-      if (!mudam.has(k) || !vivos.has(k) || (ehFor && k === r) || this.locais.has(k)) return;
-      const nome = this.novoLocal();
-      out.push(`${ind}int ${nome} = ${mostrar(valido(st[k]))};`);
+    const declarar = (k: Registrador, nome: string, ini: string | null) => {
+      if (ini !== null) out.push(`${ind}int ${nome}${ini === '' ? '' : ` = ${ini}`};`);
       this.locais.set(k, nome);
       st[k] = { k: 'var', n: nome };
       novos.push(k);
+    };
+    REGISTRADORES.forEach(k => {
+      if (!mudam.has(k) || !vivos.has(k) || (ehFor && k === r) || this.locais.has(k)) return;
+      const atual = st[k];
+      if (atual.k === 'var' && this.podeSerVariavel(k, atual.n, l, st)) return declarar(k, atual.n, null);
+      if (atual.k === 'var' && this.ultimoLocal.get(k) === atual.n && !this.ehVariavelSimples(atual.n)) return declarar(k, atual.n, null);
+      const nome = k === r && this.soContaComConstante(k, l.h, l.t) ? this.novoContador() : this.novoLocal();
+      declarar(k, nome, mostrar(valido(atual)));
     });
 
-    const stCorpo = { ...st };
-    mudam.forEach(k => { if (k !== r && !this.locais.has(k)) stCorpo[k] = { k: 'inval' }; });
-    const gravadas = this.gravadas(corpoIni, corpoFim);
-    this.invalidarLeituras(stCorpo, gravadas);
+    // JMP para o meio do laço: o trecho entre o alvo e o teste roda uma vez antes
+    if (l.antes) {
+      const linhas = this.bloco(l.antes[0], l.antes[1], st, nivel);
+      out.push(...linhas);
+    }
+
+    const stLaco = { ...st };
+    mudam.forEach(k => { if (!this.locais.has(k)) stLaco[k] = { k: 'inval' }; });
+    this.invalidarLeituras(stLaco, gravadas);
+
+    // contador do for
+    let nomeFor = '';
+    let vivoDepois = false;
+    if (ehFor) {
+      const ini = st[r!];
+      vivoDepois = this.vivo(r!, l.fim);
+      const daMemoria = ini.k === 'var' && this.ins.filter(it => this.acessa(it, (ini as { n: string }).n)).length === 1;
+      nomeFor = daMemoria ? (ini as { n: string }).n : this.novoContador();
+      stLaco[r!] = { k: 'var', n: nomeFor };
+    }
+
+    // prefixo (LOAD/IN antes do teste): vira parte da condição, se der
+    let stTeste = stLaco;
+    let prefixoNaCondicao = !temPrefixo;
+    if (temPrefixo) {
+      const teste = { ...stLaco };
+      const linhas = this.bloco(l.prefixo[0], l.prefixo[1], teste, nivel + 1);
+      const leituraRepetida = [...this.escritos(l.prefixo[0], l.prefixo[1])].some(w =>
+        temChamada(teste[w]) && this.vivos(ci, cf).has(w));
+      if (!linhas.length && !leituraRepetida) { prefixoNaCondicao = true; stTeste = teste; }
+      else {
+        // a leitura (digitalRead…) fica numa variável, para não ser feita duas vezes
+        this.escritos(l.prefixo[0], l.prefixo[1]).forEach(w => {
+          if (this.locais.has(w) || !temChamada(teste[w]) || !this.vivos(ci, cf).has(w)) return;
+          declarar(w, this.novoLocal(), '');
+          stLaco[w] = { k: 'var', n: this.locais.get(w)! };
+        });
+      }
+    }
+
+    this.contexto.push({ continua: l.continua, saida: l.saida, extra: l.extra });
+    const corpo = (s: number, e: number, est: Estado) => {
+      const linhas = this.bloco(s, e, est, nivel + 1);
+      this.fecharTexto(linhas, nivel + 1);
+      return linhas;
+    };
     let cabecalho: string;
     let linhas: string[];
     if (ehFor) {
-      const nome = this.contadores.shift() ?? `c${l.ini}`;
-      const ini = mostrar(st[r]);
-      const lim = mostrar(this.expr(cb, st));
-      const opJ = jcc.def.op;
-      const cond = opJ === 'JE' || opJ === 'JGE' ? '<' : opJ === 'JG' ? '<=' : NEGA[opJ];
-      cabecalho = `for (int ${nome} = ${ini}; ${nome} ${cond} ${lim}; ${nome}++) {`;
-      stCorpo[r] = { k: 'var', n: nome };
-      linhas = this.bloco(corpoIni, corpoFim - 1, stCorpo, nivel + 1);
+      this.usouFor = true;
+      const lim = mostrar(this.expr(cb!, st));
+      const limNum = cb!.t === 'num' ? cb!.v : null;
+      const op = opContinua === '!=' && (limNum === null || vIni! <= limNum) ? '<' : opContinua;
+      const daMemoria = nomeFor === (st[r!] as { n?: string }).n;
+      const cond = `${nomeFor} ${op} ${lim}`;
+      if (this.modoWhile) {
+        if (!daMemoria) out.push(`${ind}int ${nomeFor} = ${vIni};`);
+        cabecalho = `while (${cond}) {`;
+        linhas = [...corpo(ci, cf - 1, stLaco), `${ind}  ${nomeFor}++;`];
+      } else {
+        let decl = 'int ';
+        if (vivoDepois) {
+          if (!daMemoria) out.push(`${ind}int ${nomeFor};`);
+          decl = '';
+        } else if (daMemoria) {
+          this.ocultas.add(nomeFor);
+        }
+        cabecalho = `for (${decl}${nomeFor} = ${vIni}; ${cond}; ${nomeFor}++) {`;
+        linhas = corpo(ci, cf - 1, stLaco);
+      }
+    } else if (l.tipo === 'infinito') {
+      cabecalho = 'while (true) {';
+      linhas = corpo(ci, cf, stLaco);
+    } else if (l.tipo === 'topo' && prefixoNaCondicao) {
+      cabecalho = `while (${this.condicao(cmp!, jcc!, stTeste, l.teste!.sai)}) {`;
+      linhas = corpo(ci, cf, { ...stTeste });
+    } else if (l.tipo === 'topo') {
+      const stP = { ...stLaco };
+      const pre = this.bloco(l.prefixo[0], l.prefixo[1], stP, nivel + 1);
+      const sair = this.condicao(cmp!, jcc!, stP, !l.teste!.sai);
+      cabecalho = 'while (true) {';
+      linhas = [...pre, `${ind}  if (${sair}) break;`, ...corpo(ci, cf, stP)];
     } else {
-      if (mudam.has(r) && !this.locais.has(r)) throw new NaoEstruturado();
-      cabecalho = `while (${this.condicao(cmp, jcc, st)}) {`;
-      linhas = this.bloco(corpoIni, corpoFim, stCorpo, nivel + 1);
+      // teste no fim
+      let cond: string | null = null;
+      if (primeiraVerdadeira) { try { cond = this.condicao(cmp!, jcc!, stLaco, false); } catch { cond = null; } }
+      if (cond) {
+        cabecalho = `while (${cond}) {`;
+        linhas = corpo(ci, cf, { ...stLaco });
+      } else {
+        const stC = { ...stLaco };
+        linhas = corpo(ci, cf, stC);
+        linhas.push(`${ind}  if (${this.condicao(cmp!, jcc!, stC, true)}) break;`);
+        cabecalho = 'while (true) {';
+      }
     }
-    this.fecharTexto(linhas, nivel + 1);
+    this.contexto.pop();
     out.push(ind + cabecalho, ...linhas, `${ind}}`);
+
+    // estado depois do laço
+    const prefixo = temPrefixo && prefixoNaCondicao ? { ...stTeste } : null;
     mudam.forEach(k => st[k] = this.aposMudanca(k));
-    if (ehFor) st[r] = { k: 'inval' };
+    this.invalidarVariaveis(st, mudam);
     this.invalidarLeituras(st, gravadas);
-    // depois do laço, o registrador vale a variável local; ela não precisa mais receber cada mudança
-    novos.forEach(k => this.locais.delete(k));
+    if (prefixo) {
+      // sem break, o laço termina logo depois do prefixo: os registradores têm os valores dele
+      const temBreak = this.temDesvioPara(ci, cf, l.saida) || (!!l.extra && this.temDesvioPara(ci, cf, l.extra[0]));
+      const doCorpo = this.escritos(ci, cf);
+      doPrefixo.forEach(w => { if ((!temBreak || !doCorpo.has(w)) && !this.locais.has(w)) st[w] = prefixo[w]; });
+    }
+    if (ehFor) {
+      if (vivoDepois) { this.locais.set(r!, nomeFor); st[r!] = { k: 'var', n: nomeFor }; }
+      else st[r!] = { k: 'inval' };
+    }
+    // depois do laço, a variável não precisa mais receber cada mudança do registrador
+    novos.forEach(k => { this.ultimoLocal.set(k, this.locais.get(k)!); this.locais.delete(k); });
     return l.fim;
   }
 }
