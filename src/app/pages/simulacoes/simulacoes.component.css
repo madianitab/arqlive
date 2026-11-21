@@ -65,3 +65,23 @@
   gap: 12px;
 }
 .group-title::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
+
+/* descrição curta do assunto, logo abaixo do título */
+.group-sub { margin: -6px 0 16px; font-size: 14px; color: var(--text-3); }
+
+/* abas por assunto */
+.abas { display: flex; flex-wrap: wrap; gap: 8px; margin: -20px 0 36px; }
+.aba {
+  font-family: var(--f-mono); font-size: 12.5px; font-weight: 600; letter-spacing: .04em;
+  padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--text-2);
+  transition: background .2s, color .2s, border-color .2s;
+}
+.aba:hover { border-color: var(--a-line); color: var(--text); }
+.aba:focus-visible { outline: 2px solid var(--a); outline-offset: 2px; }
+.aba.ativa { background: var(--a); border-color: var(--a); color: #fff; }
+:host-context([data-theme="dark"]) .aba.ativa { color: #15130e; }
+
+/* módulo em construção: card esmaecido */
+.sim-deck > os-card.construcao { opacity: .62; }
+.sim-deck > os-card.construcao ::ng-deep .os-card { border-style: dashed; }

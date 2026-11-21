@@ -12,13 +12,15 @@ import { Router, RouterLink } from '@angular/router';
 import { OsButtonComponent } from '../../ui/button/button.component';
 import { OsCardComponent } from '../../ui/card/card.component';
 import { OsCardIconComponent } from '../../ui/card-icon/card-icon.component';
+import { OsBadgeComponent } from '../../ui/badge/badge.component';
+import { ASSUNTOS, temModuloPronto } from '../simulacoes/conteudos';
 
 type SceneKind = 'zoom' | 'slideX' | 'slideUp';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [NgFor, RouterLink, OsButtonComponent, OsCardComponent, OsCardIconComponent],
+  imports: [NgFor, RouterLink, OsButtonComponent, OsCardComponent, OsCardIconComponent, OsBadgeComponent],
   styleUrls: ['./landing.component.css'],
   template: `
 <div class="landing" #root>
@@ -55,7 +57,7 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
       <section class="scene" data-i="0">
         <div class="scene-inner">
           <h1 class="hero-title">Arq<b>Live</b><span class="cursor"></span></h1>
-          <p class="hero-tagline">o computador, <em>por dentro</em>.<br>do código em C às instruções da CPU: simule, traduza e pratique.</p>
+          <p class="hero-tagline">o computador, <em>por dentro</em>.<br>níveis da máquina, CPU, memória, barramentos e assembly: simule e pratique.</p>
           <div class="hero-cta">
             <os-button variant="p" size="lg" [glow]="true" (click)="go('/simulacoes')">Explorar o laboratório</os-button>
           </div>
@@ -67,60 +69,43 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
       <section class="scene" data-i="1">
         <div class="scene-inner">
           <div class="section-idx">01 — O que você aprende</div>
-          <h2 class="section-title">Como a CPU executa um programa</h2>
+          <h2 class="section-title">Como o computador funciona por dentro</h2>
           <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4 tw-mt-8 scene-deck">
-            <os-card title="Assembly">
-              <os-card-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg></os-card-icon>
-              Instruções simples: mover, somar, comparar e desviar.
+            <os-card title="Do código ao hardware">
+              <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M6 10h12M8 14h8M10 18h4"/></svg></os-card-icon>
+              Os níveis da máquina: do programa em C à lógica digital.
             </os-card>
-            <os-card title="Registradores">
-              <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></os-card-icon>
-              PC, IR, MAR, MDR e os registradores de uso geral mudando a cada passo.
+            <os-card title="CPU, memória e barramentos">
+              <os-card-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h10v10H7z"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></svg></os-card-icon>
+              Os componentes e como conversam: registradores, ULA, cache, memória e os sinais nos barramentos.
             </os-card>
-            <os-card title="Ciclo de instrução">
+            <os-card title="Programa em execução">
               <os-card-icon slot="icon" variant="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/></svg></os-card-icon>
-              Busca, decodificação e execução, instrução por instrução.
+              Assembly e o ciclo de instrução: busca, decodificação e execução, passo a passo.
             </os-card>
           </div>
         </div>
       </section>
 
-      <!-- CENA 2 — LABORATÓRIO -->
+      <!-- CENA 2 — LABORATÓRIO (um card por assunto; cada um abre o Laboratório já filtrado) -->
       <section class="scene" data-i="2">
         <div class="scene-inner">
           <div class="section-idx">02 — Laboratório</div>
           <h2 class="section-title">Aprenda fazendo</h2>
           <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 xl:tw-grid-cols-5 tw-gap-4 tw-mt-8 scene-deck">
-            <a class="deck-link" href="#/assembly/simulador" (click)="go('/assembly/simulador'); $event.preventDefault()">
-              <os-card title="Simulador de Assembly">
-                <os-card-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg></os-card-icon>
-                Escreva o programa de um lado e veja a execução, passo a passo, do outro.
-              </os-card>
-            </a>
-            <a class="deck-link" href="#/assembly/ciclo" (click)="go('/assembly/ciclo'); $event.preventDefault()">
-              <os-card title="Ciclo de instrução">
-                <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/><path d="M9 12h6M12 9v6"/></svg></os-card-icon>
-                Veja cada instrução passar pela busca, decodificação e execução.
-              </os-card>
-            </a>
-            <a class="deck-link" href="#/assembly/executor" (click)="go('/assembly/executor'); $event.preventDefault()">
-              <os-card title="Executor Assembly">
-                <os-card-icon slot="icon" variant="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5l12 7-12 7z"/></svg></os-card-icon>
-                Escreva o código, clique em Executar e veja o resultado e o equivalente em C++.
-              </os-card>
-            </a>
-            <a class="deck-link" href="#/assembly/tradutor" (click)="go('/assembly/tradutor'); $event.preventDefault()">
-              <os-card title="Tradutor C → Assembly">
-                <os-card-icon slot="icon" variant="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/></svg></os-card-icon>
-                Escreva em C ou Arduino e veja o Assembly simplificado correspondente.
-              </os-card>
-            </a>
-            <a class="deck-link" href="#/assembly/exercicios" (click)="go('/assembly/exercicios'); $event.preventDefault()">
-              <os-card title="Exercícios">
-                <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></os-card-icon>
-                Escreva o assembly, responda e confira na hora.
-              </os-card>
-            </a>
+            @for (a of assuntos; track a.id) {
+              <a class="deck-link" [href]="'#/simulacoes?assunto=' + a.id" (click)="go('/simulacoes?assunto=' + a.id); $event.preventDefault()">
+                <os-card [title]="a.nome">
+                  <os-card-icon slot="icon" [variant]="a.variante ?? 'default'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                      @for (d of a.icone; track $index) { <path [attr.d]="d"></path> }
+                    </svg>
+                  </os-card-icon>
+                  @if (!pronto(a)) { <os-badge slot="badge" variant="w">em construção</os-badge> }
+                  {{ a.descricao }}
+                </os-card>
+              </a>
+            }
           </div>
           <div class="tw-mt-6"><a class="see-all" routerLink="/simulacoes">ver tudo no laboratório →</a></div>
         </div>
@@ -131,7 +116,7 @@ type SceneKind = 'zoom' | 'slideX' | 'slideUp';
         <div class="scene-inner">
           <span class="cta-rule"></span>
           <h2 class="cta-title">Pronto pra começar?</h2>
-          <p class="cta-sub">Escreva um programa e veja a CPU trabalhar.</p>
+          <p class="cta-sub">Escolha um assunto e veja o computador trabalhar.</p>
           <os-button variant="p" size="lg" [glow]="true" (click)="go('/simulacoes')">Começar agora</os-button>
           <div class="cta-foot">ArqLive · Arquitetura de Computadores · {{ year }}</div>
         </div>
@@ -160,6 +145,8 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly TW = 0.12;
 
   readonly year = 2026;
+  readonly assuntos = ASSUNTOS;
+  readonly pronto = temModuloPronto;
   readonly steps: { kind: SceneKind; label: string }[] = [
     { kind: 'zoom',    label: 'Início' },
     { kind: 'slideX',  label: 'Aprender' },

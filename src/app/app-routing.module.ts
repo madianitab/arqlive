@@ -14,9 +14,12 @@ const routes: Routes = [
   { path: 'simulacoes', component: SimulacoesComponent },
   { path: 'brandkit', component: BrandkitComponent },
 
+  // CPU
+  { path: 'cpu/ciclo', component: HomeCicloComponent },
+
   // Assembly
   { path: 'assembly/simulador', component: HomeAssemblyComponent },
-  { path: 'assembly/ciclo', component: HomeCicloComponent },
+  { path: 'assembly/ciclo', redirectTo: 'cpu/ciclo' },   // endereço antigo (links já passados aos alunos)
   { path: 'assembly/executor', component: ExecutorAssemblyComponent },
   { path: 'assembly/tradutor', component: TradutorCComponent },
   { path: 'assembly/exercicios', component: ExerciciosAssemblyComponent },
