@@ -2,12 +2,23 @@
 
 > Para alterar o projeto, leia também o [Guia de desenvolvimento](GUIA_DESENVOLVIMENTO.md): padrões, design system, convenções conceituais e fluxo de entrega.
 
-Simulador didático de Arquitetura e Organização de Computadores. O aluno escreve um programa no Assembly simplificado (PC e Arduino) e acompanha a execução, passo a passo: ciclo de instrução (busca, decodificação e execução), registradores (PC, IR, MAR, MDR, SP, R0 a R7), ULA, flags Z/N/C, memória, portas de I/O (LED, botão, sensor) e tela.
+Ambiente de simulação de Arquitetura e Organização de Computadores, organizado por assunto: **níveis da máquina, CPU, memória, barramentos e assembly**. No assembly, o aluno escreve um programa no Assembly simplificado (PC e Arduino) e acompanha a execução, passo a passo: ciclo de instrução (busca, decodificação e execução), registradores (PC, IR, MAR, MDR, SP, R0 a R7), ULA, flags Z/N/C, memória, portas de I/O (LED, botão, sensor) e tela.
+
+O **Laboratório** (`#/simulacoes`) mostra os módulos agrupados por assunto, na ordem de ensino, com abas para filtrar (`#/simulacoes?assunto=cpu`, por exemplo). A tela inicial tem um card por assunto, que abre o Laboratório já filtrado. Módulos ainda não feitos aparecem como **em construção**:
+
+| Assunto | Módulo em construção |
+|---|---|
+| Níveis da máquina | Sistema multinível |
+| CPU | Componentes da CPU |
+| Memória | Hierarquia de memória · Cache |
+| Barramentos | Endereço, dados e controle · Tipos de barramento |
+
+Módulos prontos:
 
 | Assunto | Modo | Rota | Pasta |
 |---|---|---|---|
 | Assembly | Simulador de Assembly (passo a passo) | `#/assembly/simulador` | `src/app/features/assembly/simulador` |
-| Assembly | Ciclo de instrução (busca, decodificação e execução em micro-operações, com programas fixos) | `#/assembly/ciclo` | `src/app/features/assembly/ciclo` |
+| CPU | Ciclo de instrução (busca, decodificação e execução em micro-operações, com programas fixos) | `#/cpu/ciclo` (o endereço antigo `#/assembly/ciclo` redireciona) | `src/app/features/assembly/ciclo` |
 | Assembly | Executor Assembly (executa e mostra o resultado e o C++ equivalente, sem registradores, com `for` e `while`) | `#/assembly/executor` | `src/app/features/assembly/executor` |
 | Assembly | Tradutor C → Assembly (escreve em C/C++ e vê o Assembly simplificado correspondente) | `#/assembly/tradutor` | `src/app/features/assembly/tradutor` |
 | Assembly | Exercícios (escreve o assembly ou o C, responde às perguntas e confere) | `#/assembly/exercicios` | `src/app/features/assembly/exercicios` |

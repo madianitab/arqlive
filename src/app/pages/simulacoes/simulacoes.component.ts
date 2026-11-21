@@ -1,10 +1,12 @@
-import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { OsButtonComponent } from '../../ui/button/button.component';
 import { OsCardComponent } from '../../ui/card/card.component';
 import { OsCardIconComponent } from '../../ui/card-icon/card-icon.component';
 import { OsBadgeComponent } from '../../ui/badge/badge.component';
+import { ASSUNTOS, IdAssunto } from './conteudos';
 
+/** Página "Laboratório": módulos agrupados por assunto, com abas para filtrar. */
 @Component({
   selector: 'app-simulacoes',
   standalone: true,
@@ -15,51 +17,69 @@ import { OsBadgeComponent } from '../../ui/badge/badge.component';
   <header class="sim-head">
     <div class="section-idx">Laboratório</div>
     <h1 class="sim-title">O que você quer fazer?</h1>
-    <p class="sim-sub">Simule, acompanhe o ciclo de instrução, execute, traduza e pratique: do código em C às instruções que a CPU executa.</p>
+    <p class="sim-sub">Níveis da máquina, CPU, memória, barramentos e assembly: simule, acompanhe e pratique como o computador funciona por dentro.</p>
   </header>
 
-  <section class="sim-group">
-    <h2 class="group-title">Assembly</h2>
-    <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 xl:tw-grid-cols-5 tw-gap-4 sim-deck">
-      <os-card title="Simulador de Assembly">
-        <os-card-icon slot="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/></svg></os-card-icon>
-        <os-badge slot="badge" variant="a">simulador</os-badge>
-        Assembly simplificado (PC e Arduino), passo a passo: registradores, ULA, flags, memória e portas (LED, botão, sensor).
-        <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/simulador')">Abrir →</os-button></div>
-      </os-card>
-      <os-card title="Ciclo de instrução">
-        <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v4h-4"/><path d="M9 12h6M12 9v6"/></svg></os-card-icon>
-        <os-badge slot="badge" variant="a">simulador</os-badge>
-        Busca, decodificação e execução de cada instrução, em micro-operações: PC, IR, MAR, MDR, ULA e memória.
-        <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/ciclo')">Abrir →</os-button></div>
-      </os-card>
-      <os-card title="Executor Assembly">
-        <os-card-icon slot="icon" variant="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5l12 7-12 7z"/></svg></os-card-icon>
-        <os-badge slot="badge" variant="s">executor</os-badge>
-        Escreva, execute e veja o resultado direto, com o código equivalente em C++ (PC ou Arduino).
-        <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/executor')">Abrir →</os-button></div>
-      </os-card>
-      <os-card title="Tradutor C → Assembly">
-        <os-card-icon slot="icon" variant="warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/></svg></os-card-icon>
-        <os-badge slot="badge" variant="s">tradutor</os-badge>
-        Escreva em C/C++ (PC ou Arduino) e veja o Assembly simplificado correspondente.
-        <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/tradutor')">Abrir →</os-button></div>
-      </os-card>
-      <os-card title="Exercícios">
-        <os-card-icon slot="icon" variant="info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></os-card-icon>
-        <os-badge slot="badge" variant="s">exercícios</os-badge>
-        Escreva o assembly (ou o C), responda às perguntas e confira na hora.
-        <div slot="footer"><os-button variant="p" size="sm" (click)="go('/assembly/exercicios')">Abrir →</os-button></div>
-      </os-card>
-    </div>
-  </section>
+  <nav class="abas" role="tablist" aria-label="Assuntos">
+    <button type="button" role="tab" class="aba" [class.ativa]="filtro() === null" [attr.aria-selected]="filtro() === null" (click)="filtrar(null)">Todos</button>
+    @for (a of assuntos; track a.id) {
+      <button type="button" role="tab" class="aba" [class.ativa]="filtro() === a.id" [attr.aria-selected]="filtro() === a.id" (click)="filtrar(a.id)">{{ a.nome }}</button>
+    }
+  </nav>
 
+  @for (a of visiveis(); track a.id) {
+    <section class="sim-group" [attr.aria-label]="a.nome">
+      <h2 class="group-title">{{ a.nome }}</h2>
+      <p class="group-sub">{{ a.descricao }}</p>
+      <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-4 sim-deck">
+        @for (m of a.modulos; track m.titulo) {
+          <os-card [title]="m.titulo" [class.construcao]="!m.rota">
+            <os-card-icon slot="icon" [variant]="m.variante ?? 'default'">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                @for (d of m.icone; track $index) { <path [attr.d]="d"></path> }
+              </svg>
+            </os-card-icon>
+            @if (m.rota) {
+              <os-badge slot="badge" [variant]="m.tipo.variante">{{ m.tipo.texto }}</os-badge>
+            } @else {
+              <os-badge slot="badge" variant="w">em construção</os-badge>
+            }
+            {{ m.descricao }}
+            <div slot="footer">
+              @if (m.rota) {
+                <os-button variant="p" size="sm" (click)="go(m.rota)">Abrir →</os-button>
+              } @else {
+                <os-button variant="g" size="sm" [disabled]="true">Em construção</os-button>
+              }
+            </div>
+          </os-card>
+        }
+      </div>
+    </section>
+  }
 </div>
   `,
 })
 export class SimulacoesComponent {
   private readonly router = inject(Router);
+  private readonly rota = inject(ActivatedRoute);
+
+  readonly assuntos = ASSUNTOS;
+  /** Assunto escolhido na aba (null = todos); vem de ?assunto= na URL. */
+  readonly filtro = signal<IdAssunto | null>(this.lerFiltro());
+  readonly visiveis = computed(() => this.assuntos.filter(a => !this.filtro() || a.id === this.filtro()));
+
+  filtrar(id: IdAssunto | null): void {
+    this.filtro.set(id);
+    this.router.navigate([], { relativeTo: this.rota, queryParams: { assunto: id }, replaceUrl: true });
+  }
+
   go(path: string): void {
     this.router.navigateByUrl(path);
+  }
+
+  private lerFiltro(): IdAssunto | null {
+    const q = this.rota.snapshot.queryParamMap.get('assunto');
+    return this.assuntos.some(a => a.id === q) ? (q as IdAssunto) : null;
   }
 }

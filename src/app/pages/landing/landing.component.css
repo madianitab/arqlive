@@ -289,3 +289,6 @@
   .hero-title .cursor, .wheel, .tcur, .cdot, .hero-eyebrow .dot { animation: none; }
   .cta-bg span { opacity: .82; transform: none; }
 }
+
+/* selo "em construção" numa linha só, mesmo nos cards estreitos */
+.deck-link os-badge ::ng-deep .os-badge { white-space: nowrap; }
